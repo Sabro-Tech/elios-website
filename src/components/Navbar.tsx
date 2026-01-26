@@ -15,6 +15,7 @@ export default function Navbar() {
         { name: 'CUSTOMER SUPPORT', path: '/#support' },
         { name: 'ABOUT US', path: '/#about' },
         { name: 'CONTACT US', path: '/#contact' },
+        { name: 'ADMIN', path: '/admin' },
     ];
 
     return (
