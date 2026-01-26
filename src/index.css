@@ -1,0 +1,77 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&family=Oswald:wght@200..700&family=Questrial&family=Syne:wght@400..800&display=swap');
+
+@theme {
+  --font-heading: "Syne", sans-serif;
+  --font-body: "Syne", sans-serif;
+  --font-ui: "Oswald", sans-serif;
+  --font-montserrat: "Montserrat", sans-serif;
+  --font-questrial: "Questrial", sans-serif;
+
+  --color-brand-blue: #1E4186;
+  --color-brand-text: #000000;
+  --color-footer-bg: #D9D9D9;
+
+  /* Custom keyframes can stay inside @theme or go outside. Moving outside for clarity with classes. */
+}
+
+/* Custom Animations */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(200px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-200px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 2.0s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 2.0s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+:root {}
+
+:root {
+  font-family: var(--font-body);
+  line-height: 1.5;
+  font-weight: 400;
+
+  color: var(--color-brand-text);
+  background-color: #ffffff;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  background-color: #ffffff;
+}
+
+a {
+  text-decoration: inherit;
+}
