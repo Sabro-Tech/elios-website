@@ -8,6 +8,7 @@ import Admin from "./pages/Admin"
 import Navbar from "./components/Navbar"
 import Footer from "./components/Footer"
 import ScrollToHash from "./components/ScrollToHash"
+import WhatsAppButton from "./components/WhatsAppButton"
 import { AuthProvider } from "./context/AuthContext"
 import ProtectedRoute from "./components/ProtectedRoute"
 
@@ -34,6 +35,7 @@ export default function App() {
           } />
         </Routes>
         <Footer />
+        <WhatsAppButton />
       </AuthProvider>
     </BrowserRouter>
   )
