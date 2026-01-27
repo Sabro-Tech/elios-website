@@ -1,22 +1,27 @@
-
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import navbarLogo from '../assets/elios-navbar.png';
+import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
-    const [isLoggedIn, setIsLoggedIn] = useState(false); // Mock auth state for UI
+    const { user, userData, logout } = useAuth();
+    const navigate = useNavigate();
     const [showDropdown, setShowDropdown] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const userName = "Test User"; // Mock user name
+
+    const userName = userData ? `${userData.firstname} ${userData.lastname}` : user?.email || "User";
 
     const navLinks = [
-        { name: 'HOME', path: '/#' },
+        { name: 'HOME', path: '/' },
         { name: 'FEATURES', path: '/#features' },
-        { name: 'CUSTOMER SUPPORT', path: '/#support' },
+        { name: 'CUSTOMER SUPPORT', path: '/support' },
         { name: 'ABOUT US', path: '/#about' },
         { name: 'CONTACT US', path: '/#contact' },
-        { name: 'ADMIN', path: '/admin' },
     ];
+
+    if (userData?.role === 'admin') {
+        navLinks.push({ name: 'ADMIN', path: '/admin' });
+    }
 
     return (
         <header className="sticky top-0 w-full z-50 bg-white shadow-sm">
@@ -46,7 +51,7 @@ export default function Navbar() {
                     </nav>
 
                     {/* User Section (Desktop) */}
-                    {isLoggedIn ? (
+                    {user ? (
                         <div className="relative">
                             <button
                                 onClick={() => setShowDropdown(!showDropdown)}
@@ -62,9 +67,10 @@ export default function Navbar() {
                             {showDropdown && (
                                 <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 shadow-lg rounded-md py-1 z-50">
                                     <button
-                                        onClick={() => {
-                                            setIsLoggedIn(false);
+                                        onClick={async () => {
+                                            await logout();
                                             setShowDropdown(false);
+                                            navigate('/');
                                         }}
                                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-ui"
                                         style={{ fontFamily: 'Oswald, sans-serif' }}
@@ -119,15 +125,16 @@ export default function Navbar() {
                     ))}
 
                     <div className="border-t border-gray-100 pt-4 mt-2">
-                        {isLoggedIn ? (
+                        {user ? (
                             <div className="flex flex-col gap-3">
                                 <span className="font-ui text-[16px] font-medium text-brand-text" style={{ fontFamily: 'Oswald, sans-serif' }}>
                                     Hello, {userName}
                                 </span>
                                 <button
-                                    onClick={() => {
-                                        setIsLoggedIn(false);
+                                    onClick={async () => {
+                                        await logout();
                                         setIsMobileMenuOpen(false);
+                                        navigate('/');
                                     }}
                                     className="font-ui text-[16px] font-medium text-red-600 text-left"
                                     style={{ fontFamily: 'Oswald, sans-serif' }}

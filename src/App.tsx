@@ -8,21 +8,33 @@ import Admin from "./pages/Admin"
 import Navbar from "./components/Navbar"
 import Footer from "./components/Footer"
 import ScrollToHash from "./components/ScrollToHash"
+import { AuthProvider } from "./context/AuthContext"
+import ProtectedRoute from "./components/ProtectedRoute"
 
 export default function App() {
   return (
     <BrowserRouter>
-      <ScrollToHash />
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/support" element={<Support />} />
-        <Route path="/admin" element={<Admin />} />
-      </Routes>
-      <Footer />
+      <AuthProvider>
+        <ScrollToHash />
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/support" element={
+            <ProtectedRoute>
+              <Support />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin" element={
+            <ProtectedRoute adminOnly>
+              <Admin />
+            </ProtectedRoute>
+          } />
+        </Routes>
+        <Footer />
+      </AuthProvider>
     </BrowserRouter>
   )
 }

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../services/firebase';
 
 const countryCodes = [
     { code: '+92', name: 'Pakistan' },
@@ -22,6 +24,7 @@ export default function ContactForm() {
     const [hoverRating, setHoverRating] = useState(0);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -45,12 +48,33 @@ export default function ContactForm() {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (validate()) {
-            console.log('Form Submitted:', { ...formData, rating });
-            setIsSubmitted(true);
-            // In a real app, you'd send this to a backend/firebase
+            setLoading(true);
+            try {
+                await addDoc(collection(db, 'ContactMessages'), {
+                    ...formData,
+                    rating,
+                    status: 'New', // Default status as requested
+                    createdAt: serverTimestamp()
+                });
+                setIsSubmitted(true);
+                setFormData({
+                    firstName: '',
+                    lastName: '',
+                    email: '',
+                    phone: '',
+                    countryCode: '+92',
+                    message: ''
+                });
+                setRating(0);
+            } catch (error) {
+                console.error('Error submitting form:', error);
+                alert('Failed to send message. Please try again.');
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
@@ -194,9 +218,10 @@ export default function ContactForm() {
                         {/* Row 5: Submit */}
                         <button
                             type="submit"
-                            className="bg-[#1e4186] text-white font-questrial py-4 px-10 rounded-full text-xl font-bold hover:bg-[#152e60] transition-all transform active:scale-95 shadow-lg mt-4"
+                            disabled={loading}
+                            className="bg-[#1e4186] text-white font-questrial py-4 px-10 rounded-full text-xl font-bold hover:bg-[#152e60] transition-all transform active:scale-95 shadow-lg mt-4 disabled:opacity-50"
                         >
-                            Submit
+                            {loading ? 'Submitting...' : 'Submit'}
                         </button>
                     </form>
                 )}

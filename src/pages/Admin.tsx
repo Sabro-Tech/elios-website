@@ -1,72 +1,172 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { collection, onSnapshot, doc, updateDoc, collectionGroup, query, orderBy } from 'firebase/firestore';
+import { db } from '../services/firebase';
+import { useAuth } from '../context/AuthContext';
 
 type Brand = 'Elios' | 'Sabro';
-type Tab = 'Customers' | 'Warranties' | 'Complaints';
+type Tab = 'Customers' | 'Warranties' | 'Complaints' | 'Messages';
 
 export default function Admin() {
+    const { user, userData } = useAuth();
     const [activeBrand, setActiveBrand] = useState<Brand>('Elios');
     const [activeTab, setActiveTab] = useState<Tab>('Customers');
     const [searchQuery, setSearchQuery] = useState('');
+    const [loading, setLoading] = useState(true);
 
-    // Mock Data State (normally from Firestore)
     const [data, setData] = useState({
-        Elios: {
-            Customers: [
-                { firstName: 'Ahmed', lastName: 'Khan', contact: '0300-1234567', email: 'ahmed@example.com', address: 'H-12', city: 'Islamabad', joinedOn: '2025-01-01' },
-                { firstName: 'Sara', lastName: 'Ali', contact: '0321-9876543', email: 'sara@example.com', address: 'Gulberg', city: 'Lahore', joinedOn: '2025-01-10' },
-            ],
-            Warranties: [
-                { firstName: 'Ahmed', lastName: 'Khan', contact: '0300-1234567', email: 'ahmed@example.com', warrantyNo: 'W-EL-001', serialNo: 'SN123', device: '1.5 Ton Split - LED', startDate: '2025-01-15', parts: '1 Year', pcb: '3 Years', compressor: '10 Years' },
-            ],
-            Complaints: [
-                { tid: 'T-EL-001', name: 'Ahmed Khan', contact: '0300-1234567', city: 'Islamabad', address: 'H-12', date: '2025-01-20', complaint: 'Cooling issue', status: 'Pending', closingDate: '' },
-            ]
-        },
-        Sabro: {
-            Customers: [
-                { firstName: 'Zain', lastName: 'Malik', contact: '0333-5556667', email: 'zain@example.com', address: 'Sector F-7', city: 'Islamabad', joinedOn: '2024-12-20' },
-            ],
-            Warranties: [],
-            Complaints: []
-        }
+        Elios: { Customers: [] as any[], Warranties: [] as any[], Complaints: [] as any[] },
+        Sabro: { Customers: [] as any[], Warranties: [] as any[], Complaints: [] as any[] },
+        Messages: [] as any[]
     });
+
+    // Role-based logic
+    const isGlobalAdmin = userData?.role === 'admin';
+    const cityAdmin = userData?.role?.includes('Admin') ? userData.role.split(' ')[0] : null;
+
+    useEffect(() => {
+        if (!user) return;
+
+        // Fetch Customers from 'Customers' (All web users)
+        const unsubCustomers = onSnapshot(collection(db, 'Customers'), (snapshot) => {
+            const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), _collection: 'Customers' })) as any[];
+
+            const eliosC = docs.filter(d => d.brand !== 'Sabro'); // Default to Elios if not specified
+            const sabroC = docs.filter(d => d.brand === 'Sabro');
+
+            setData(prev => ({
+                ...prev,
+                Elios: { ...prev.Elios, Customers: eliosC },
+                Sabro: { ...prev.Sabro, Customers: [...prev.Sabro.Customers.filter(d => d._collection === 'Sabro Customers'), ...sabroC] }
+            }));
+            setLoading(false);
+        });
+
+        // Fetch Sabro Customers from 'Sabro Customers' (Read-only/Legacy)
+        const unsubSabroLegacy = onSnapshot(collection(db, 'Sabro Customers'), (snapshot) => {
+            const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), _collection: 'Sabro Customers' }));
+
+            setData(prev => ({
+                ...prev,
+                Sabro: { ...prev.Sabro, Customers: [...prev.Sabro.Customers.filter(d => d._collection === 'Customers'), ...docs] }
+            }));
+        });
+
+        // Fetch All Warranties (Collection Group)
+        const unsubWarranties = onSnapshot(query(collectionGroup(db, 'Warranties')), (snapshot) => {
+            const docs = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                customerId: doc.ref.parent.parent?.id,
+                _path: doc.ref.path,
+                _collection: doc.ref.path.includes('Sabro Customers') ? 'Sabro Customers' : 'Customers'
+            }));
+
+            const eliosW = docs.filter(d => d._collection === 'Customers');
+            const sabroW = docs.filter(d => d._collection === 'Sabro Customers');
+
+            setData(prev => ({
+                ...prev,
+                Elios: { ...prev.Elios, Warranties: eliosW },
+                Sabro: { ...prev.Sabro, Warranties: sabroW }
+            }));
+        });
+
+        // Fetch All Complaints (Collection Group)
+        const unsubComplaints = onSnapshot(query(collectionGroup(db, 'Complaints')), (snapshot) => {
+            const docs = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                customerId: doc.ref.parent.parent?.id,
+                _path: doc.ref.path,
+                _collection: doc.ref.path.includes('Sabro Customers') ? 'Sabro Customers' : 'Customers'
+            }));
+
+            const eliosC = docs.filter(d => d._collection === 'Customers');
+            const sabroC = docs.filter(d => d._collection === 'Sabro Customers');
+
+            setData(prev => ({
+                ...prev,
+                Elios: { ...prev.Elios, Complaints: eliosC },
+                Sabro: { ...prev.Sabro, Complaints: sabroC }
+            }));
+        });
+
+        // Fetch Contact Messages
+        const unsubMessages = onSnapshot(query(collection(db, 'ContactMessages'), orderBy('createdAt', 'desc')), (snapshot) => {
+            const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setData(prev => ({ ...prev, Messages: docs }));
+        });
+
+        return () => {
+            unsubCustomers();
+            unsubSabroLegacy();
+            unsubWarranties();
+            unsubComplaints();
+            unsubMessages();
+        };
+    }, [user]);
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchQuery(e.target.value.toLowerCase());
     };
 
-    const handleComplaintUpdate = (brand: Brand, index: number, field: 'status' | 'closingDate', value: string) => {
-        const newData = { ...data };
-        (newData[brand].Complaints[index] as any)[field] = value;
-        setData(newData);
+    const handleUpdateStatus = async (item: any, tab: Tab, field: string, value: string) => {
+        try {
+            const coll = item._collection;
+            const docRef = doc(db, coll, item.customerId, tab, item.id);
+            await updateDoc(docRef, { [field]: value });
+        } catch (error) {
+            console.error('Update failed:', error);
+            alert('Failed to update record.');
+        }
     };
 
-    const handleSave = () => {
-        alert('Changes saved to database (mock)!');
+    const handleMessageAction = async (msgId: string, field: string, value: any) => {
+        try {
+            const docRef = doc(db, 'ContactMessages', msgId);
+            await updateDoc(docRef, { [field]: value });
+        } catch (error) {
+            console.error('Message action failed:', error);
+        }
     };
 
-    const filteredData = () => {
-        const currentData = data[activeBrand][activeTab];
-        if (!searchQuery) return currentData;
+    const applyRoleFilter = (items: any[]) => {
+        if (isGlobalAdmin) return items;
+        if (cityAdmin) {
+            return items.filter(item => {
+                const city = item.city || '';
+                return city.toLowerCase() === cityAdmin.toLowerCase();
+            });
+        }
+        return [];
+    };
 
-        return currentData.filter((item: any) => {
-            if (activeTab === 'Customers') {
-                return item.firstName.toLowerCase().includes(searchQuery) ||
-                    item.contact.includes(searchQuery) ||
-                    item.city.toLowerCase().includes(searchQuery);
-            }
-            if (activeTab === 'Warranties') {
-                return item.firstName.toLowerCase().includes(searchQuery) ||
-                    item.warrantyNo.toLowerCase().includes(searchQuery) ||
-                    item.serialNo.toLowerCase().includes(searchQuery) ||
-                    item.contact.includes(searchQuery);
-            }
-            if (activeTab === 'Complaints') {
-                return item.tid.toLowerCase().includes(searchQuery) ||
-                    item.name.toLowerCase().includes(searchQuery) ||
-                    item.contact.includes(searchQuery);
-            }
-            return true;
+    const getFilteredData = () => {
+        if (activeTab === 'Messages') {
+            const msgs = data.Messages;
+            if (!searchQuery) return msgs;
+            return msgs.filter(m =>
+                m.firstName?.toLowerCase().includes(searchQuery) ||
+                m.email?.toLowerCase().includes(searchQuery) ||
+                m.message?.toLowerCase().includes(searchQuery)
+            );
+        }
+
+        const currentData = data[activeBrand][activeTab as Exclude<Tab, 'Messages'>];
+        const roleFiltered = applyRoleFilter(currentData);
+
+        if (!searchQuery) return roleFiltered;
+
+        return roleFiltered.filter((item: any) => {
+            const searchStr = searchQuery.toLowerCase();
+            return (
+                item.firstname?.toLowerCase().includes(searchStr) ||
+                item.lastname?.toLowerCase().includes(searchStr) ||
+                item.phone?.includes(searchStr) ||
+                item.email?.toLowerCase().includes(searchStr) ||
+                item.id?.toLowerCase().includes(searchStr) ||
+                item.deviceserial?.toLowerCase().includes(searchStr)
+            );
         });
     };
 
@@ -80,15 +180,18 @@ export default function Admin() {
                             <button
                                 key={brand}
                                 onClick={() => setActiveBrand(brand)}
-                                className={`h-full px-4 text-[24px] font-heading font-bold lowercase tracking-widest transition-all relative ${activeBrand === brand ? 'text-[#1e4186]' : 'text-gray-400'
+                                className={`h-full px-4 text-[24px] font-heading font-bold lowercase tracking-widest transition-all relative ${activeBrand === brand && activeTab !== 'Messages' ? 'text-[#1e4186]' : 'text-gray-400'
                                     }`}
                             >
                                 {brand === 'Elios' ? 'elios' : 'sabro'}
-                                {activeBrand === brand && (
+                                {activeBrand === brand && activeTab !== 'Messages' && (
                                     <div className="absolute bottom-0 left-0 w-full h-1 bg-[#1e4186] rounded-t-full"></div>
                                 )}
                             </button>
                         ))}
+                    </div>
+                    <div className="text-sm font-bold text-[#1e4186] bg-blue-50 px-4 py-2 rounded-full">
+                        {userData?.role || 'Admin'} Panel
                     </div>
                 </div>
             </div>
@@ -97,7 +200,7 @@ export default function Admin() {
                 {/* Minimal sub-navbar & Search */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                     <div className="flex bg-gray-200/50 p-1 rounded-xl">
-                        {(['Customers', 'Warranties', 'Complaints'] as Tab[]).map(tab => (
+                        {(['Customers', 'Warranties', 'Complaints', 'Messages'] as Tab[]).map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
@@ -125,124 +228,162 @@ export default function Admin() {
 
                 {/* Table Section */}
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden overflow-x-auto">
-                    <table className="w-full text-left min-w-[1000px]">
-                        <thead className="bg-[#f1f5f9] border-b border-gray-100">
-                            {activeTab === 'Customers' && (
-                                <tr className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                    <th className="px-6 py-5">First Name</th>
-                                    <th className="px-6 py-5">Last Name</th>
-                                    <th className="px-6 py-5">Contact</th>
-                                    <th className="px-6 py-5">Email</th>
-                                    <th className="px-6 py-5">Address</th>
-                                    <th className="px-6 py-5">City</th>
-                                    <th className="px-6 py-5">Joined On</th>
-                                </tr>
-                            )}
-                            {activeTab === 'Warranties' && (
-                                <tr className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                    <th className="px-6 py-5">Customer</th>
-                                    <th className="px-6 py-5">Contact</th>
-                                    <th className="px-6 py-5">Warranty No.</th>
-                                    <th className="px-6 py-5">Serial No.</th>
-                                    <th className="px-6 py-5">Device</th>
-                                    <th className="px-6 py-5">Start Date</th>
-                                    <th className="px-6 py-5">Warranties (P/PCB/C)</th>
-                                </tr>
-                            )}
-                            {activeTab === 'Complaints' && (
-                                <tr className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                    <th className="px-6 py-5">TID</th>
-                                    <th className="px-6 py-5">Name / Contact</th>
-                                    <th className="px-6 py-5">Location</th>
-                                    <th className="px-6 py-5">Date</th>
-                                    <th className="px-6 py-5">Complaint</th>
-                                    <th className="px-6 py-5">Status</th>
-                                    <th className="px-6 py-5">Closing Date</th>
-                                    <th className="px-6 py-5 text-center">Action</th>
-                                </tr>
-                            )}
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {filteredData().map((item: any, idx: number) => (
-                                <tr key={idx} className="hover:bg-gray-50 transition-colors font-questrial text-sm text-gray-700">
-                                    {activeTab === 'Customers' && (
-                                        <>
-                                            <td className="px-6 py-5 font-bold text-gray-900">{item.firstName}</td>
-                                            <td className="px-6 py-5 text-gray-900">{item.lastName}</td>
-                                            <td className="px-6 py-5">{item.contact}</td>
-                                            <td className="px-6 py-5 text-blue-600">{item.email}</td>
-                                            <td className="px-6 py-5 text-gray-500">{item.address}</td>
-                                            <td className="px-6 py-5">{item.city}</td>
-                                            <td className="px-6 py-5 text-gray-400">{item.joinedOn}</td>
-                                        </>
-                                    )}
-                                    {activeTab === 'Warranties' && (
-                                        <>
-                                            <td className="px-6 py-5 font-bold text-gray-900">{item.firstName} {item.lastName}</td>
-                                            <td className="px-6 py-5">{item.contact}</td>
-                                            <td className="px-6 py-5 font-bold text-[#1e4186]">{item.warrantyNo}</td>
-                                            <td className="px-6 py-5 text-gray-500">{item.serialNo}</td>
-                                            <td className="px-6 py-5">{item.device}</td>
-                                            <td className="px-6 py-5">{item.startDate}</td>
-                                            <td className="px-6 py-5 flex gap-2">
-                                                <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[10px] font-bold">P:{item.parts}</span>
-                                                <span className="bg-purple-50 text-purple-600 px-2 py-0.5 rounded text-[10px] font-bold">PCB:{item.pcb}</span>
-                                                <span className="bg-green-50 text-green-600 px-2 py-0.5 rounded text-[10px] font-bold">C:{item.compressor}</span>
-                                            </td>
-                                        </>
-                                    )}
-                                    {activeTab === 'Complaints' && (
-                                        <>
-                                            <td className="px-6 py-5 font-bold text-[#1e4186]">{item.tid}</td>
-                                            <td className="px-6 py-5">
-                                                <div className="font-bold text-gray-900">{item.name}</div>
-                                                <div className="text-xs text-gray-400">{item.contact}</div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className="text-gray-900">{item.city}</div>
-                                                <div className="text-xs text-gray-400">{item.address}</div>
-                                            </td>
-                                            <td className="px-6 py-5">{item.date}</td>
-                                            <td className="px-6 py-5 max-w-[200px] truncate" title={item.complaint}>{item.complaint}</td>
-                                            <td className="px-6 py-5">
-                                                <select
-                                                    value={item.status}
-                                                    onChange={(e) => handleComplaintUpdate(activeBrand, idx, 'status', e.target.value)}
-                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold outline-none cursor-pointer border ${item.status === 'Resolved' ? 'bg-green-50 text-green-600 border-green-200' :
-                                                        item.status === 'In Progress' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                                                            'bg-yellow-50 text-yellow-600 border-yellow-200'
-                                                        }`}
-                                                >
-                                                    <option value="Pending">Pending</option>
-                                                    <option value="In Progress">In Progress</option>
-                                                    <option value="Resolved">Resolved</option>
-                                                </select>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <input
-                                                    type="date"
-                                                    value={item.closingDate}
-                                                    onChange={(e) => handleComplaintUpdate(activeBrand, idx, 'closingDate', e.target.value)}
-                                                    className="bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-lg text-xs outline-none cursor-pointer focus:border-[#1e4186]"
-                                                />
-                                            </td>
-                                            <td className="px-6 py-5 text-center">
-                                                <button
-                                                    onClick={handleSave}
-                                                    className="bg-[#1e4186] hover:bg-[#152e60] text-white px-5 py-2 rounded-xl text-xs font-bold transition-all"
-                                                >
-                                                    Save
-                                                </button>
-                                            </td>
-                                        </>
-                                    )}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    {filteredData().length === 0 && (
+                    {loading ? (
+                        <div className="p-20 text-center text-gray-400 animate-pulse">Loading data...</div>
+                    ) : (
+                        <table className="w-full text-left min-w-[1000px]">
+                            <thead className="bg-[#f1f5f9] border-b border-gray-100">
+                                {activeTab === 'Customers' && (
+                                    <tr className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        <th className="px-6 py-5">First Name</th>
+                                        <th className="px-6 py-5">Last Name</th>
+                                        <th className="px-6 py-5">Contact</th>
+                                        <th className="px-6 py-5">Email</th>
+                                        <th className="px-6 py-5">Address</th>
+                                        <th className="px-6 py-5">City</th>
+                                        <th className="px-6 py-5">Joined On</th>
+                                    </tr>
+                                )}
+                                {activeTab === 'Warranties' && (
+                                    <tr className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        <th className="px-6 py-5">Warranty ID</th>
+                                        <th className="px-6 py-5">Customer</th>
+                                        <th className="px-6 py-5">Serial No.</th>
+                                        <th className="px-6 py-5">Device</th>
+                                        <th className="px-6 py-5">Start Date</th>
+                                        <th className="px-6 py-5">End Date</th>
+                                    </tr>
+                                )}
+                                {activeTab === 'Complaints' && (
+                                    <tr className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        <th className="px-6 py-5">TID</th>
+                                        <th className="px-6 py-5">Name / Contact</th>
+                                        <th className="px-6 py-5">Location</th>
+                                        <th className="px-6 py-5">Date</th>
+                                        <th className="px-6 py-5">Complaint</th>
+                                        <th className="px-6 py-5">Status</th>
+                                        <th className="px-6 py-5">Closing Date</th>
+                                    </tr>
+                                )}
+                                {activeTab === 'Messages' && (
+                                    <tr className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        <th className="px-6 py-5">Status</th>
+                                        <th className="px-6 py-5">Name / Email</th>
+                                        <th className="px-6 py-5">Phone</th>
+                                        <th className="px-6 py-5">Message</th>
+                                        <th className="px-6 py-5">Date</th>
+                                        <th className="px-6 py-5 text-center">Actions</th>
+                                    </tr>
+                                )}
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {getFilteredData().map((item: any) => (
+                                    <tr key={item.id} className="hover:bg-gray-50 transition-colors font-questrial text-sm text-gray-700">
+                                        {activeTab === 'Customers' && (
+                                            <>
+                                                <td className="px-6 py-5 font-bold text-gray-900">{item.firstname}</td>
+                                                <td className="px-6 py-5">{item.lastname}</td>
+                                                <td className="px-6 py-5">{item.phone}</td>
+                                                <td className="px-6 py-5 text-blue-600">{item.email}</td>
+                                                <td className="px-6 py-5 text-gray-500">{item.address}</td>
+                                                <td className="px-6 py-5">{item.city}</td>
+                                                <td className="px-6 py-5 text-gray-400">{item.createdAt}</td>
+                                            </>
+                                        )}
+                                        {activeTab === 'Warranties' && (
+                                            <>
+                                                <td className="px-6 py-5 font-bold text-[#1e4186]">{item.id}</td>
+                                                <td className="px-6 py-5">
+                                                    <div className="font-bold text-gray-900">{item.firstname} {item.lastname}</div>
+                                                    <div className="text-xs text-gray-400">{item.phone}</div>
+                                                </td>
+                                                <td className="px-6 py-5 font-mono text-xs">{item.deviceserial}</td>
+                                                <td className="px-6 py-5">{item.devicedetails}</td>
+                                                <td className="px-6 py-5">{item.startdate}</td>
+                                                <td className="px-6 py-5 text-red-500 font-bold">{item.endingdate}</td>
+                                            </>
+                                        )}
+                                        {activeTab === 'Complaints' && (
+                                            <>
+                                                <td className="px-6 py-5 font-bold text-[#1e4186]">{item.id}</td>
+                                                <td className="px-6 py-5">
+                                                    <div className="font-bold text-gray-900">{item.firstname} {item.lastname}</div>
+                                                    <div className="text-xs text-gray-400">{item.phone}</div>
+                                                </td>
+                                                <td className="px-6 py-5">
+                                                    <div className="text-gray-900">{item.city}</div>
+                                                    <div className="text-xs text-gray-400">{item.address}</div>
+                                                </td>
+                                                <td className="px-6 py-5">{item.complaintdate}</td>
+                                                <td className="px-6 py-5 max-w-[200px] truncate" title={item.complaint}>{item.complaint}</td>
+                                                <td className="px-6 py-5">
+                                                    <select
+                                                        value={item.complaintstatus}
+                                                        onChange={(e) => handleUpdateStatus(item, 'Complaints', 'complaintstatus', e.target.value)}
+                                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold outline-none cursor-pointer border ${item.complaintstatus === 'Resolved' ? 'bg-green-50 text-green-600 border-green-200' :
+                                                            item.complaintstatus === 'In Progress' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                                                                'bg-yellow-50 text-yellow-600 border-yellow-200'
+                                                            }`}
+                                                    >
+                                                        <option value="Registered">Registered</option>
+                                                        <option value="In Progress">In Progress</option>
+                                                        <option value="Resolved">Resolved</option>
+                                                    </select>
+                                                </td>
+                                                <td className="px-6 py-5">
+                                                    <input
+                                                        type="date"
+                                                        value={item.closingdate}
+                                                        onChange={(e) => handleUpdateStatus(item, 'Complaints', 'closingdate', e.target.value)}
+                                                        className="bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-lg text-xs outline-none cursor-pointer focus:border-[#1e4186]"
+                                                    />
+                                                </td>
+                                            </>
+                                        )}
+                                        {activeTab === 'Messages' && (
+                                            <>
+                                                <td className="px-6 py-5">
+                                                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${item.status === 'New' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}>
+                                                        {item.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-5">
+                                                    <div className="font-bold text-gray-900">{item.firstName} {item.lastName}</div>
+                                                    <div className="text-xs text-blue-500">{item.email}</div>
+                                                </td>
+                                                <td className="px-6 py-5">{item.countryCode} {item.phone}</td>
+                                                <td className="px-6 py-5 max-w-[300px] truncate" title={item.message}>{item.message}</td>
+                                                <td className="px-6 py-5 text-gray-400 text-xs">
+                                                    {item.createdAt?.toDate().toLocaleDateString()}
+                                                </td>
+                                                <td className="px-6 py-5 text-center">
+                                                    <div className="flex justify-center gap-2">
+                                                        <button
+                                                            onClick={() => handleMessageAction(item.id, 'status', item.status === 'New' ? 'Read' : 'New')}
+                                                            className={`p-1.5 rounded-lg border transition-colors ${item.status === 'Read' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}
+                                                            title="Mark as Read"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleMessageAction(item.id, 'starred', !item.starred)}
+                                                            className={`p-1.5 rounded-lg border transition-colors ${item.starred ? 'bg-yellow-50 text-yellow-600 border-yellow-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}
+                                                            title="Star Message"
+                                                        >
+                                                            <svg className="w-4 h-4" fill={item.starred ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </>
+                                        )}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                    {!loading && getFilteredData().length === 0 && (
                         <div className="p-20 text-center text-gray-400 font-questrial italic">
-                            No records found matching your search.
+                            No records found.
                         </div>
                     )}
                 </div>
