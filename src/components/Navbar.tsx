@@ -14,9 +14,9 @@ export default function Navbar() {
     const navLinks = [
         { name: 'HOME', path: '/' },
         { name: 'FEATURES', path: '/#features' },
-        { name: 'CUSTOMER SUPPORT', path: '/support' },
         { name: 'ABOUT US', path: '/#about' },
         { name: 'CONTACT US', path: '/#contact' },
+        { name: 'CUSTOMER SUPPORT', path: '/support' },
     ];
 
     if (userData?.role === 'admin') {
