@@ -14,7 +14,7 @@ import ProtectedRoute from "./components/ProtectedRoute"
 
 export default function App() {
   return (
-    <HashRouter basename={import.meta.env.BASE_URL}>
+    <HashRouter>
       <AuthProvider>
         <ScrollToHash />
         <Navbar />
