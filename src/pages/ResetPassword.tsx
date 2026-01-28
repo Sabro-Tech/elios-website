@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import navbarLogo from '../assets/elios-navbar.png';
+import { getFriendlyAuthError } from '../utils/authErrors';
 
 export default function ResetPassword() {
     const [email, setEmail] = useState('');
@@ -23,7 +24,7 @@ export default function ResetPassword() {
             setMessage({ type: 'success', text: 'Check your email for password reset instructions.' });
             setEmail('');
         } catch (err: any) {
-            setMessage({ type: 'error', text: err.message || 'Failed to send reset email.' });
+            setMessage({ type: 'error', text: getFriendlyAuthError(err.code || err.message) });
         } finally {
             setLoading(false);
         }

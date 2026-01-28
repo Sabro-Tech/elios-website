@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import navbarLogo from '../assets/elios-navbar.png';
+import { getFriendlyAuthError } from '../utils/authErrors';
 
 export default function Signup() {
     const [formData, setFormData] = useState({
@@ -43,7 +44,7 @@ export default function Signup() {
             });
             navigate('/support');
         } catch (err: any) {
-            setError(err.message || 'Failed to create account.');
+            setError(getFriendlyAuthError(err.code || err.message));
         } finally {
             setLoading(false);
         }
