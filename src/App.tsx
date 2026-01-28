@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { HashRouter, Routes, Route } from "react-router-dom"
 import Home from "./pages/Home"
 import Login from "./pages/Login"
 import Signup from "./pages/Signup"
@@ -14,7 +14,7 @@ import ProtectedRoute from "./components/ProtectedRoute"
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <HashRouter basename={import.meta.env.BASE_URL}>
       <AuthProvider>
         <ScrollToHash />
         <Navbar />
@@ -37,6 +37,6 @@ export default function App() {
         <Footer />
         <WhatsAppButton />
       </AuthProvider>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
