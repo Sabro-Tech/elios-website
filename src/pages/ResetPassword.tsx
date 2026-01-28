@@ -2,89 +2,106 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../services/firebase';
+import navbarLogo from '../assets/elios-navbar.png';
 
 export default function ResetPassword() {
     const [email, setEmail] = useState('');
-    const [message, setMessage] = useState('');
-    const [error, setError] = useState('');
+    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setMessage('');
-        setError('');
-        setLoading(true);
+        if (!email) {
+            setMessage({ type: 'error', text: 'Please enter your email address.' });
+            return;
+        }
 
+        setLoading(true);
+        setMessage(null);
         try {
             await sendPasswordResetEmail(auth, email);
-            setMessage('A password reset link has been sent to your email. Please check your inbox and spam folder.');
+            setMessage({ type: 'success', text: 'Check your email for password reset instructions.' });
+            setEmail('');
         } catch (err: any) {
-            console.error('Password reset error:', err);
-            if (err.code === 'auth/user-not-found') {
-                setError('No account found with this email address.');
-            } else if (err.code === 'auth/invalid-email') {
-                setError('Please enter a valid email address.');
-            } else {
-                setError('Failed to send reset email. Please try again later.');
-            }
+            setMessage({ type: 'error', text: err.message || 'Failed to send reset email.' });
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6">
-            <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-10">
+        <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 relative overflow-hidden bg-[#1E4186]">
+            {/* Animated Background Elements */}
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/10 blur-[120px] rounded-full animate-float"></div>
+            <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-white/10 blur-[150px] rounded-full animate-float [animation-delay:2s]"></div>
+
+            {/* Logo Area */}
+            <Link to="/" className="mb-12 animate-fade-in-up">
+                <img
+                    src={navbarLogo}
+                    alt="Elios Logo"
+                    className="h-12 w-auto brightness-0 invert"
+                />
+            </Link>
+
+            {/* Reset Card */}
+            <div className="w-full max-w-md glass-card p-10 md:p-12 rounded-[2.5rem] animate-fade-in-up [animation-delay:200ms]">
                 <div className="text-center mb-10">
-                    <h2 className="text-[32px] font-heading font-bold text-[#1e4186] mb-2">Reset Password</h2>
-                    <p className="text-gray-500 font-questrial">Enter your email to receive a reset link</p>
+                    <h1 className="text-3xl font-heading font-black text-brand-blue uppercase tracking-tight">Reset Password</h1>
+                    <p className="text-gray-500 font-questrial mt-2">We'll send you a link to recover access</p>
                 </div>
 
-                {message && (
-                    <div className="bg-green-50 text-green-600 p-4 rounded-xl mb-6 text-sm flex items-center gap-2">
-                        <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        {message}
-                    </div>
-                )}
-
-                {error && (
-                    <div className="bg-red-50 text-red-500 p-4 rounded-xl mb-6 text-sm flex items-center gap-2">
-                        <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                        {error}
-                    </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-8">
                     <div className="flex flex-col gap-2">
-                        <label className="text-sm font-bold text-[#1e4186] px-1 font-questrial">Email Address</label>
+                        <label className="text-xs font-black text-brand-blue uppercase tracking-[0.2em] ml-1">Email Address</label>
                         <input
                             type="email"
-                            required
+                            placeholder="name@company.com"
+                            className="w-full h-14 px-6 rounded-2xl bg-white border-transparent focus:border-brand-blue/30 focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium text-brand-blue"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="john@example.com"
-                            className="bg-[#f3f4f6] px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#1e4186]/20 transition-all font-questrial"
                         />
                     </div>
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="bg-[#1e4186] text-white py-4 rounded-2xl font-bold text-lg hover:bg-[#152e60] transition-all transform active:scale-[0.98] shadow-lg mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full h-16 rounded-2xl bg-brand-blue text-white font-black text-lg uppercase tracking-[0.2em] shadow-premium hover:bg-brand-blue-dark transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3 active:scale-95"
                     >
-                        {loading ? 'Sending link...' : 'Send Reset Link'}
+                        {loading ? (
+                            <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        ) : (
+                            <>
+                                Send Link
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 group-hover:translate-x-2 transition-transform">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                </svg>
+                            </>
+                        )}
                     </button>
-                </form>
 
-                <div className="text-center mt-10 font-questrial text-gray-500 flex flex-col gap-2">
-                    <p>Remembered your password? <Link to="/login" className="text-[#1e4186] font-bold hover:underline">Log In</Link></p>
-                    <p>Don't have an account? <Link to="/signup" className="text-[#1e4186] font-bold hover:underline">Sign Up</Link></p>
-                </div>
+                    {message && (
+                        <div className={`p-4 rounded-xl text-center font-bold text-sm animate-fade-in-up border ${message.type === 'success' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'
+                            }`}>
+                            {message.text}
+                        </div>
+                    )}
+
+                    <div className="text-center flex flex-col gap-4">
+                        <Link
+                            to="/login"
+                            className="text-brand-blue font-bold hover:underline font-questrial"
+                        >
+                            Back to Sign In
+                        </Link>
+                    </div>
+                </form>
             </div>
+
+            {/* Footer Text */}
+            <p className="mt-8 text-white/40 font-ui text-xs uppercase tracking-[0.3em] animate-fade-in-up [animation-delay:400ms]">
+                © {new Date().getFullYear()} Elios Intelligence Systems
+            </p>
         </div>
     );
 }

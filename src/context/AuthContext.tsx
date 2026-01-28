@@ -2,9 +2,11 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
     onAuthStateChanged,
     signOut,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
     type User
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 
 interface UserData {
@@ -21,6 +23,8 @@ interface AuthContextType {
     user: User | null;
     userData: UserData | null;
     loading: boolean;
+    login: (email: string, password: string) => Promise<void>;
+    signup: (email: string, password: string, additionalData: any) => Promise<void>;
     logout: () => Promise<void>;
 }
 
@@ -35,10 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
             if (currentUser) {
-                // Fetch additional user data from Firestore
-                // Website users are exclusively stored in the "Customers" collection.
                 const dataDoc = await getDoc(doc(db, 'Customers', currentUser.uid));
-
                 if (dataDoc.exists()) {
                     setUserData(dataDoc.data() as UserData);
                 }
@@ -51,12 +52,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => unsubscribe();
     }, []);
 
+    const login = async (email: string, password: string) => {
+        await signInWithEmailAndPassword(auth, email, password);
+    };
+
+    const signup = async (email: string, password: string, additionalData: any) => {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const newUser = userCredential.user;
+
+        // Store additional user data in Firestore
+        await setDoc(doc(db, 'Customers', newUser.uid), {
+            ...additionalData,
+            email,
+            createdAt: serverTimestamp()
+        });
+    };
+
     const logout = () => signOut(auth);
 
     const value = {
         user,
         userData,
         loading,
+        login,
+        signup,
         logout
     };
 
