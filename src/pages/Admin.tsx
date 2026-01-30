@@ -21,7 +21,6 @@ export default function Admin() {
 
     // Role-based logic
     const isGlobalAdmin = userData?.role === 'admin';
-    const cityAdmin = userData?.role?.includes('Admin') ? userData.role.split(' ')[0] : null;
 
     useEffect(() => {
         if (!user) return;
@@ -132,12 +131,6 @@ export default function Admin() {
 
     const applyRoleFilter = (items: any[]) => {
         if (isGlobalAdmin) return items;
-        if (cityAdmin) {
-            return items.filter(item => {
-                const city = item.city || '';
-                return city.toLowerCase() === cityAdmin.toLowerCase();
-            });
-        }
         return [];
     };
 
@@ -287,7 +280,11 @@ export default function Admin() {
                                                 <td className="px-6 py-5 text-blue-600">{item.email}</td>
                                                 <td className="px-6 py-5 text-gray-500">{item.address}</td>
                                                 <td className="px-6 py-5">{item.city}</td>
-                                                <td className="px-6 py-5 text-gray-400">{item.createdAt}</td>
+                                                <td className="px-6 py-5 text-gray-400">
+                                                    {item.createdAt instanceof Object && 'toDate' in item.createdAt
+                                                        ? item.createdAt.toDate().toLocaleDateString()
+                                                        : String(item.createdAt || '')}
+                                                </td>
                                             </>
                                         )}
                                         {activeTab === 'Warranties' && (
