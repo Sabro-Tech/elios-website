@@ -4,6 +4,11 @@ import { Link } from 'react-router-dom';
 import videoBg from '../assets/white waves-background-hero.mp4';
 import geyserImg from '../assets/Geyser-transparent-hero.png';
 import acImg from '../assets/ac-nobg-hero.png';
+import flower1tImg from '../assets/1ton-flower-nobg-hero.png';
+import grey1tImg from '../assets/1ton-grey-nobg-hero.png';
+import black15tImg from '../assets/1_5ton-black-nobg-hero.png';
+import silver15tImg from '../assets/1_5ton-silver-nobg-hero.png';
+import white15tImg from '../assets/1_5ton-white-nobg-hero.png';
 
 export default function Hero() {
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -12,17 +17,52 @@ export default function Hero() {
     const slides = [
         {
             id: 1,
-            title: "AIR SOURCE WATER GEYSER",
-            subtitle: "Smart | Efficient | Digital Control",
-            image: geyserImg,
-            alt: "Air Source Water Geyser",
-        },
-        {
-            id: 2,
             title: "ELIOS DIGITAL INVERTER",
             subtitle: "The Future of Air Conditioning is Here!",
             image: acImg,
             alt: "Elios Digital Inverter AC",
+        },
+        {
+            id: 2,
+            title: "ELIOS BLOSSOM EDITION",
+            subtitle: "Smart Cooling | Beautifully Crafted",
+            image: flower1tImg,
+            alt: "Elios 1 Ton Flower Inverter AC",
+        },
+        {
+            id: 3,
+            title: "ELIOS MINIMA GREY",
+            subtitle: "Seamless Integration | Precision Cooling",
+            image: grey1tImg,
+            alt: "Elios 1 Ton Grey Inverter AC",
+        },
+        {
+            id: 4,
+            title: "ELIOS NOIR PRO",
+            subtitle: "Premium Matte Black | Smart Inverter",
+            image: black15tImg,
+            alt: "Elios 1.5 Ton Black Inverter AC",
+        },
+        {
+            id: 5,
+            title: "ELIOS APEX SILVER",
+            subtitle: "Elegant Finish | Smart Inverter",
+            image: silver15tImg,
+            alt: "Elios 1.5 Ton Silver Inverter AC",
+        },
+        {
+            id: 6,
+            title: "ELIOS ALPINE WHITE",
+            subtitle: "Clean Lines | Maximum Efficiency",
+            image: white15tImg,
+            alt: "Elios 1.5 Ton White Inverter AC",
+        },
+        {
+            id: 7,
+            title: "AIR SOURCE WATER GEYSER",
+            subtitle: "Smart | Efficient | Digital Control",
+            image: geyserImg,
+            alt: "Air Source Water Geyser",
         }
     ];
 
@@ -95,8 +135,8 @@ export default function Hero() {
                         <div
                             key={slide.id}
                             className={`absolute inset-0 w-full h-full flex flex-col md:flex-row items-center justify-center md:justify-between gap-12 transition-all duration-700 ease-in-out ${index === currentSlide
-                                    ? 'opacity-100 translate-x-0'
-                                    : index < currentSlide ? 'opacity-0 -translate-x-full' : 'opacity-0 translate-x-full'
+                                ? 'opacity-100 translate-x-0'
+                                : index < currentSlide ? 'opacity-0 -translate-x-full' : 'opacity-0 translate-x-full'
                                 }`}
                         >
                             {/* Text Section (Left) */}
