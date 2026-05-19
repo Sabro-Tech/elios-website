@@ -79,7 +79,7 @@ export default function ContactForm() {
                             </div>
                             <div>
                                 <p className="text-gray-400 text-sm uppercase tracking-widest font-bold">Email Us</p>
-                                <p className="text-brand-blue font-bold text-lg">contact@Sabro.com.pk</p>
+                                <p className="text-brand-blue font-bold text-lg">support@elios.com.pk</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-6 group">
@@ -90,7 +90,8 @@ export default function ContactForm() {
                             </div>
                             <div>
                                 <p className="text-gray-400 text-sm uppercase tracking-widest font-bold">Call Us</p>
-                                <p className="text-brand-blue font-bold text-lg">+92 51 4433006</p>
+                                <p className="text-brand-blue font-bold text-lg">+92 321 8548557</p>
+                                <p className="text-brand-blue font-bold text-lg">+92 324 8250610</p>
                             </div>
                         </div>
                     </div>

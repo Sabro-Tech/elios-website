@@ -33,8 +33,10 @@ export default function Footer() {
                 <div className="flex flex-col gap-6">
                     <p className="font-ui text-brand-blue font-bold uppercase tracking-widest text-sm">Get in Touch</p>
                     <div className="flex flex-col gap-3">
-                        <a href="mailto:contact@Sabro.com.pk" className="font-questrial text-gray-500 hover:text-brand-blue transition-colors">contact@Sabro.com.pk</a>
+                        <a href="mailto:contact@Sabro.com.pk" className="font-questrial text-gray-500 hover:text-brand-blue transition-colors">support@elios.com.pk</a>
                         <p className="font-questrial text-gray-600">+92 308 1911579</p>
+                        <p className="font-questrial text-gray-600">+92 321 8548557</p>
+                        <p className="font-questrial text-gray-600">+92 324 8250610</p>
                     </div>
                     <div className="flex gap-4 mt-2">
                         <a href="#" className="w-10 h-10 rounded-full bg-brand-blue/5 flex items-center justify-center text-brand-blue hover:bg-brand-blue hover:text-white transition-all duration-300 transform hover:-translate-y-1">FB</a>
