@@ -159,10 +159,10 @@ export default function Hero() {
                                     </h2>
                                     <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                                         <Link
-                                            to="/#features"
-                                            className="bg-brand-blue text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-brand-blue-dark transition-all shadow-xl hover:-translate-y-1 active:translate-y-0"
+                                            to="/products"
+                                            className="bg-brand-blue text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-brand-blue-dark transition-all shadow-xl hover:-translate-y-1 active:translate-y-0 animate-pulse hover:animate-none"
                                         >
-                                            DISCOVER MORE
+                                            EXPLORE PRODUCTS
                                         </Link>
                                         <Link
                                             to="/support"
