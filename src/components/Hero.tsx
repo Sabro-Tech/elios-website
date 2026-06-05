@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import videoBg from '../assets/white waves-background-hero.mp4';
 import geyserImg from '../assets/Geyser-transparent-hero.png';
-import acImg from '../assets/ac-nobg-hero.png';
 import flower1tImg from '../assets/1ton-flower-nobg-hero.png';
 import grey1tImg from '../assets/1ton-grey-nobg-hero.png';
 import black15tImg from '../assets/1_5ton-black-nobg-hero.png';
@@ -17,10 +16,10 @@ export default function Hero() {
     const slides = [
         {
             id: 1,
-            title: "ELIOS DIGITAL INVERTER",
-            subtitle: "The Future of Air Conditioning is Here!",
-            image: acImg,
-            alt: "Elios Digital Inverter AC",
+            title: "ELIOS MINIMA GREY",
+            subtitle: "Seamless Integration | Precision Cooling",
+            image: grey1tImg,
+            alt: "Elios 1 Ton Grey Inverter AC",
         },
         {
             id: 2,
@@ -31,34 +30,27 @@ export default function Hero() {
         },
         {
             id: 3,
-            title: "ELIOS MINIMA GREY",
-            subtitle: "Seamless Integration | Precision Cooling",
-            image: grey1tImg,
-            alt: "Elios 1 Ton Grey Inverter AC",
-        },
-        {
-            id: 4,
             title: "ELIOS NOIR PRO",
             subtitle: "Premium Matte Black | Smart Inverter",
             image: black15tImg,
             alt: "Elios 1.5 Ton Black Inverter AC",
         },
         {
-            id: 5,
+            id: 4,
             title: "ELIOS APEX SILVER",
             subtitle: "Elegant Finish | Smart Inverter",
             image: silver15tImg,
             alt: "Elios 1.5 Ton Silver Inverter AC",
         },
         {
-            id: 6,
+            id: 5,
             title: "ELIOS ALPINE WHITE",
             subtitle: "Clean Lines | Maximum Efficiency",
             image: white15tImg,
             alt: "Elios 1.5 Ton White Inverter AC",
         },
         {
-            id: 7,
+            id: 6,
             title: "AIR SOURCE WATER GEYSER",
             subtitle: "Smart | Efficient | Digital Control",
             image: geyserImg,
