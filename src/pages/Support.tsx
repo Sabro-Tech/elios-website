@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../services/firebase';
-import { collection, query, getDocs, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { apiFetch } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 interface UserData {
@@ -60,35 +59,30 @@ export default function Support() {
             if (!user) return;
             try {
                 // Fetch User Profile
-                const userDoc = await getDoc(doc(db, 'Customers', user.uid));
-                if (userDoc.exists()) {
-                    const data = userDoc.data() as UserData;
-                    setUserData(data);
-                    setWarrantyData(prev => ({
-                        ...prev,
-                        firstname: data.firstname,
-                        lastname: data.lastname,
-                        phone: data.phone,
-                        email: data.email
-                    }));
-                    setComplaintData(prev => ({
-                        ...prev,
-                        firstname: data.firstname,
-                        lastname: data.lastname,
-                        phone: data.phone,
-                        email: data.email
-                    }));
-                }
+                const data = await apiFetch<UserData>('/customers/me');
+                setUserData(data);
+                setWarrantyData(prev => ({
+                    ...prev,
+                    firstname: data.firstname,
+                    lastname: data.lastname,
+                    phone: data.phone,
+                    email: data.email
+                }));
+                setComplaintData(prev => ({
+                    ...prev,
+                    firstname: data.firstname,
+                    lastname: data.lastname,
+                    phone: data.phone,
+                    email: data.email
+                }));
 
-                // Fetch Warranties
-                const wQuery = query(collection(db, 'Customers', user.uid, 'Warranties'));
-                const wSnapshot = await getDocs(wQuery);
-                setWarranties(wSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-
-                // Fetch Complaints
-                const cQuery = query(collection(db, 'Customers', user.uid, 'Complaints'));
-                const cSnapshot = await getDocs(cQuery);
-                setComplaints(cSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                // Fetch Warranties & Complaints
+                const [w, c] = await Promise.all([
+                    apiFetch<any[]>('/warranties'),
+                    apiFetch<any[]>('/complaints')
+                ]);
+                setWarranties(w);
+                setComplaints(c);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -113,31 +107,18 @@ export default function Support() {
         setMessage(null);
 
         try {
-            const year = new Date().getFullYear();
-            const randomID = Math.floor(1000 + Math.random() * 9000);
-            const id = `${year}SAB-000${randomID}`;
-
-            // Calculate ending date (1 year from startdate)
-            const startDate = new Date(warrantyData.startdate);
-            const endDate = new Date(startDate.setFullYear(startDate.getFullYear() + 1));
-            const endingdate = endDate.toISOString().split('T')[0];
-
-            const docRef = doc(db, 'Customers', user!.uid, 'Warranties', id);
-            const submissionData = {
-                ...warrantyData,
-                status: 'Verified',
-                endingdate,
-                createdAt: serverTimestamp()
-            };
-
-            await setDoc(docRef, submissionData);
+            // ID, ending date and status are all assigned server-side now
+            const created = await apiFetch('/warranties', {
+                method: 'POST',
+                body: warrantyData
+            });
 
             setMessage({ type: 'success', text: 'Warranty registered successfully!' });
             setIsWarrantyVisible(false);
-            setWarranties([{ id, ...submissionData, createdAt: new Date().toISOString() }, ...warranties]);
-        } catch (err) {
+            setWarranties([created, ...warranties]);
+        } catch (err: any) {
             console.error('Warranty submission error:', err);
-            setMessage({ type: 'error', text: 'Failed to register warranty. Please try again.' });
+            setMessage({ type: 'error', text: err?.message || 'Failed to register warranty. Please try again.' });
         } finally {
             setSubmitLoading(false);
         }
@@ -150,27 +131,18 @@ export default function Support() {
         setMessage(null);
 
         try {
-            const randomID = Math.floor(1000 + Math.random() * 9000);
-            const id = `T-${randomID}`;
-            const complaintdate = new Date().toISOString().split('T')[0];
-
-            const docRef = doc(db, 'Customers', user!.uid, 'Complaints', id);
-            const submissionData = {
-                ...complaintData,
-                complaintdate,
-                complaintstatus: 'Registered',
-                closingdate: '',
-                createdAt: serverTimestamp()
-            };
-
-            await setDoc(docRef, submissionData);
+            // ID, dates and status are assigned server-side now
+            const created = await apiFetch('/complaints', {
+                method: 'POST',
+                body: complaintData
+            });
 
             setMessage({ type: 'success', text: 'Complaint submitted successfully!' });
             setIsComplaintVisible(false);
-            setComplaints([{ id, ...submissionData, createdAt: new Date().toISOString() }, ...complaints]);
-        } catch (err) {
+            setComplaints([created, ...complaints]);
+        } catch (err: any) {
             console.error('Complaint submission error:', err);
-            setMessage({ type: 'error', text: 'Failed to submit complaint. Please try again.' });
+            setMessage({ type: 'error', text: err?.message || 'Failed to submit complaint. Please try again.' });
         } finally {
             setSubmitLoading(false);
         }

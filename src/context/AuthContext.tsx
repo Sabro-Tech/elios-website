@@ -6,8 +6,8 @@ import {
     createUserWithEmailAndPassword,
     type User
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../services/firebase';
+import { auth } from '../services/firebase';
+import { apiFetch } from '../services/api';
 
 interface UserData {
     firstname: string;
@@ -39,9 +39,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
             if (currentUser) {
-                const dataDoc = await getDoc(doc(db, 'Customers', currentUser.uid));
-                if (dataDoc.exists()) {
-                    setUserData(dataDoc.data() as UserData);
+                try {
+                    const profile = await apiFetch<UserData>('/customers/me');
+                    setUserData(profile);
+                } catch {
+                    setUserData(null);
                 }
             } else {
                 setUserData(null);
@@ -57,15 +59,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const signup = async (email: string, password: string, additionalData: any) => {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const newUser = userCredential.user;
+        await createUserWithEmailAndPassword(auth, email, password);
 
-        // Store additional user data in Firestore
-        await setDoc(doc(db, 'Customers', newUser.uid), {
-            ...additionalData,
-            email,
-            createdAt: serverTimestamp()
+        // Create the profile via the website API (role is assigned server-side)
+        const profile = await apiFetch<UserData>('/customers/me', {
+            method: 'POST',
+            body: additionalData
         });
+        setUserData(profile);
     };
 
     const logout = () => signOut(auth);

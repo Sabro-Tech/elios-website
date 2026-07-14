@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, doc, updateDoc, collectionGroup, query, orderBy } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import { apiFetch } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 type Brand = 'Elios' | 'Sabro';
@@ -22,87 +21,43 @@ export default function Admin() {
     // Role-based logic
     const isGlobalAdmin = userData?.role === 'admin';
 
+    const loadData = async () => {
+        try {
+            const [customers, warranties, complaints, messages] = await Promise.all([
+                apiFetch<any[]>('/admin/customers'),
+                apiFetch<any[]>('/admin/warranties'),
+                apiFetch<any[]>('/admin/complaints'),
+                apiFetch<any[]>('/admin/messages')
+            ]);
+
+            const byBrand = (items: any[], brand: Brand) =>
+                items.filter(d => (d.brand === 'Sabro' ? 'Sabro' : 'Elios') === brand);
+
+            setData({
+                Elios: {
+                    Customers: byBrand(customers, 'Elios'),
+                    Warranties: byBrand(warranties, 'Elios'),
+                    Complaints: byBrand(complaints, 'Elios')
+                },
+                Sabro: {
+                    Customers: byBrand(customers, 'Sabro'),
+                    Warranties: byBrand(warranties, 'Sabro'),
+                    Complaints: byBrand(complaints, 'Sabro')
+                },
+                Messages: messages
+            });
+        } catch (error) {
+            console.error('Failed to load admin data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (!user) return;
-
-        // Fetch Customers from 'Customers' (All web users)
-        const unsubCustomers = onSnapshot(collection(db, 'Customers'), (snapshot) => {
-            const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), _collection: 'Customers' })) as any[];
-
-            const eliosC = docs.filter(d => d.brand !== 'Sabro'); // Default to Elios if not specified
-            const sabroC = docs.filter(d => d.brand === 'Sabro');
-
-            setData(prev => ({
-                ...prev,
-                Elios: { ...prev.Elios, Customers: eliosC },
-                Sabro: { ...prev.Sabro, Customers: [...prev.Sabro.Customers.filter(d => d._collection === 'Sabro Customers'), ...sabroC] }
-            }));
-            setLoading(false);
-        });
-
-        // Fetch Sabro Customers from 'Sabro Customers' (Read-only/Legacy)
-        const unsubSabroLegacy = onSnapshot(collection(db, 'Sabro Customers'), (snapshot) => {
-            const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), _collection: 'Sabro Customers' }));
-
-            setData(prev => ({
-                ...prev,
-                Sabro: { ...prev.Sabro, Customers: [...prev.Sabro.Customers.filter(d => d._collection === 'Customers'), ...docs] }
-            }));
-        });
-
-        // Fetch All Warranties (Collection Group)
-        const unsubWarranties = onSnapshot(query(collectionGroup(db, 'Warranties')), (snapshot) => {
-            const docs = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                customerId: doc.ref.parent.parent?.id,
-                _path: doc.ref.path,
-                _collection: doc.ref.path.includes('Sabro Customers') ? 'Sabro Customers' : 'Customers'
-            }));
-
-            const eliosW = docs.filter(d => d._collection === 'Customers');
-            const sabroW = docs.filter(d => d._collection === 'Sabro Customers');
-
-            setData(prev => ({
-                ...prev,
-                Elios: { ...prev.Elios, Warranties: eliosW },
-                Sabro: { ...prev.Sabro, Warranties: sabroW }
-            }));
-        });
-
-        // Fetch All Complaints (Collection Group)
-        const unsubComplaints = onSnapshot(query(collectionGroup(db, 'Complaints')), (snapshot) => {
-            const docs = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                customerId: doc.ref.parent.parent?.id,
-                _path: doc.ref.path,
-                _collection: doc.ref.path.includes('Sabro Customers') ? 'Sabro Customers' : 'Customers'
-            }));
-
-            const eliosC = docs.filter(d => d._collection === 'Customers');
-            const sabroC = docs.filter(d => d._collection === 'Sabro Customers');
-
-            setData(prev => ({
-                ...prev,
-                Elios: { ...prev.Elios, Complaints: eliosC },
-                Sabro: { ...prev.Sabro, Complaints: sabroC }
-            }));
-        });
-
-        // Fetch Contact Messages
-        const unsubMessages = onSnapshot(query(collection(db, 'ContactMessages'), orderBy('createdAt', 'desc')), (snapshot) => {
-            const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setData(prev => ({ ...prev, Messages: docs }));
-        });
-
-        return () => {
-            unsubCustomers();
-            unsubSabroLegacy();
-            unsubWarranties();
-            unsubComplaints();
-            unsubMessages();
-        };
+        loadData();
+        const interval = setInterval(loadData, 30000); // refresh every 30s
+        return () => clearInterval(interval);
     }, [user]);
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,19 +66,25 @@ export default function Admin() {
 
     const handleUpdateStatus = async (item: any, tab: Tab, field: string, value: string) => {
         try {
-            const coll = item._collection;
-            const docRef = doc(db, coll, item.customerId, tab, item.id);
-            await updateDoc(docRef, { [field]: value });
+            const resource = tab === 'Warranties' ? 'warranties' : 'complaints';
+            await apiFetch(`/admin/${resource}/${encodeURIComponent(item.id)}`, {
+                method: 'PATCH',
+                body: { field, value }
+            });
+            await loadData();
         } catch (error) {
             console.error('Update failed:', error);
             alert('Failed to update record.');
         }
     };
 
-    const handleMessageAction = async (msgId: string, field: string, value: any) => {
+    const handleMessageAction = async (msgId: string | number, field: string, value: any) => {
         try {
-            const docRef = doc(db, 'ContactMessages', msgId);
-            await updateDoc(docRef, { [field]: value });
+            await apiFetch(`/admin/messages/${msgId}`, {
+                method: 'PATCH',
+                body: { field, value }
+            });
+            await loadData();
         } catch (error) {
             console.error('Message action failed:', error);
         }
@@ -281,9 +242,7 @@ export default function Admin() {
                                                 <td className="px-6 py-5 text-gray-500">{item.address}</td>
                                                 <td className="px-6 py-5">{item.city}</td>
                                                 <td className="px-6 py-5 text-gray-400">
-                                                    {item.createdAt instanceof Object && 'toDate' in item.createdAt
-                                                        ? item.createdAt.toDate().toLocaleDateString()
-                                                        : String(item.createdAt || '')}
+                                                    {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}
                                                 </td>
                                             </>
                                         )}
@@ -351,7 +310,7 @@ export default function Admin() {
                                                 <td className="px-6 py-5">{item.countryCode} {item.phone}</td>
                                                 <td className="px-6 py-5 max-w-[300px] truncate" title={item.message}>{item.message}</td>
                                                 <td className="px-6 py-5 text-gray-400 text-xs">
-                                                    {item.createdAt?.toDate().toLocaleDateString()}
+                                                    {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}
                                                 </td>
                                                 <td className="px-6 py-5 text-center">
                                                     <div className="flex justify-center gap-2">

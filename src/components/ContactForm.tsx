@@ -1,6 +1,5 @@
 import { useState, useRef } from 'react';
-import { db } from '../services/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { apiFetch } from '../services/api';
 
 export default function ContactForm() {
     const [formData, setFormData] = useState({
@@ -35,10 +34,10 @@ export default function ContactForm() {
         setMessage(null);
 
         try {
-            await addDoc(collection(db, 'ContactSubmissions'), {
-                ...formData,
-                fullPhone: `${formData.countryCode}${formData.phone}`,
-                submittedAt: serverTimestamp()
+            await apiFetch('/contact', {
+                method: 'POST',
+                withAuth: false,
+                body: formData
             });
 
             setMessage({ type: 'success', text: 'Message sent successfully! We will contact you soon.' });

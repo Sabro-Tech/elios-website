@@ -9,4 +9,13 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    // local dev: forward API calls to the live backend
+    proxy: {
+      '/api': {
+        target: 'https://eliospk.com',
+        changeOrigin: true,
+      },
+    },
+  },
 })

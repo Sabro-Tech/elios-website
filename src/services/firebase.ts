@@ -1,6 +1,5 @@
 import { initializeApp } from "firebase/app"
 import { getAuth } from "firebase/auth"
-import { getFirestore } from "firebase/firestore"
 
 const firebaseConfig = {
     apiKey: "AIzaSyCwd12cbv6gZx6eHRGhxW3z1G-pF8Q6KQo",
@@ -15,5 +14,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig)
 
+// Firebase is now used for AUTH ONLY — all data goes through the website API
+// (see services/api.ts). Firestore access was removed in the W2 migration.
 export const auth = getAuth(app)
-export const db = getFirestore(app)
