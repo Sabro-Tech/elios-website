@@ -11,33 +11,36 @@ import Footer from "./components/Footer"
 import ScrollToHash from "./components/ScrollToHash"
 import WhatsAppButton from "./components/WhatsAppButton"
 import { AuthProvider } from "./context/AuthContext"
+import { FieldProvider } from "./context/FieldContext"
 import ProtectedRoute from "./components/ProtectedRoute"
 
 export default function App() {
   return (
     <HashRouter>
       <AuthProvider>
-        <ScrollToHash />
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/support" element={
-            <ProtectedRoute>
-              <Support />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin" element={
-            <ProtectedRoute adminOnly>
-              <Admin />
-            </ProtectedRoute>
-          } />
-        </Routes>
-        <Footer />
-        <WhatsAppButton />
+        <FieldProvider>
+          <ScrollToHash />
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/support" element={
+              <ProtectedRoute>
+                <Support />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <ProtectedRoute adminOnly>
+                <Admin />
+              </ProtectedRoute>
+            } />
+          </Routes>
+          <Footer />
+          <WhatsAppButton />
+        </FieldProvider>
       </AuthProvider>
     </HashRouter>
   )

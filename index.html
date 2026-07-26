@@ -5,10 +5,29 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/favicon.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Elios</title>
+  <meta name="theme-color" content="#0E0F11" />
+  <meta name="description"
+    content="Elios digital inverter air conditioners and air-source water geysers. Pakistani-built, wireless controlled, reporting their own power draw while they run." />
+  <title>Elios — Digital Inverter Air Conditioning</title>
 </head>
 
 <body>
+  <!--
+    DESIGN DIRECTION — "Adaptive Field"
+
+    THE RULE: the ground is decided by the object standing on it. A white unit
+    gets a dark field; the near-black Noir Pro flips its ground light; the
+    Android app measured #214FB7, so the app section is navy. Every accent in
+    src/theme/fields.ts was sampled from the real asset, never chosen by eye.
+
+    WHY IT HOLDS: Elios sells measurable efficiency, not raw cold. Letting the
+    product decide the page keeps the unit legible at every step and gives the
+    brand blue a real surface instead of a hairline.
+
+    MOTION: one reveal grammar (.rv), one ambient breath, and a ground that
+    genuinely cross-fades via @property colour interpolation. All of it is
+    disabled under prefers-reduced-motion.
+  -->
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

@@ -1,7 +1,7 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import videoBg from '../assets/white waves-background-hero.mp4';
+import { FIELDS, fieldVars, onAccent, type Field } from '../theme/fields';
+import { useField } from '../context/FieldContext';
 import geyserImg from '../assets/Geyser-transparent-hero.png';
 import flower1tImg from '../assets/1ton-flower-nobg-hero.png';
 import grey1tImg from '../assets/1ton-grey-nobg-hero.png';
@@ -9,190 +9,254 @@ import black15tImg from '../assets/1_5ton-black-nobg-hero.png';
 import silver15tImg from '../assets/1_5ton-silver-nobg-hero.png';
 import white15tImg from '../assets/1_5ton-white-nobg-hero.png';
 
-export default function Hero() {
-    const [currentSlide, setCurrentSlide] = useState(0);
-    const [isAnimating, setIsAnimating] = useState(false);
+interface Slide {
+    id: string;
+    line1: string;
+    line2: string;
+    subtitle: string;
+    image: string;
+    alt: string;
+    field: Field;
+    readout: [string, string][];
+}
 
-    const slides = [
-        {
-            id: 1,
-            title: "ELIOS MINIMA GREY",
-            subtitle: "Seamless Integration | Precision Cooling",
-            image: grey1tImg,
-            alt: "Elios 1 Ton Grey Inverter AC",
-        },
-        {
-            id: 2,
-            title: "ELIOS BLOSSOM EDITION",
-            subtitle: "Smart Cooling | Beautifully Crafted",
-            image: flower1tImg,
-            alt: "Elios 1 Ton Flower Inverter AC",
-        },
-        {
-            id: 3,
-            title: "ELIOS NOIR PRO",
-            subtitle: "Premium Matte Black | Smart Inverter",
-            image: black15tImg,
-            alt: "Elios 1.5 Ton Black Inverter AC",
-        },
-        {
-            id: 4,
-            title: "ELIOS APEX SILVER",
-            subtitle: "Elegant Finish | Smart Inverter",
-            image: silver15tImg,
-            alt: "Elios 1.5 Ton Silver Inverter AC",
-        },
-        {
-            id: 5,
-            title: "ELIOS ALPINE WHITE",
-            subtitle: "Clean Lines | Maximum Efficiency",
-            image: white15tImg,
-            alt: "Elios 1.5 Ton White Inverter AC",
-        },
-        {
-            id: 6,
-            title: "AIR SOURCE WATER GEYSER",
-            subtitle: "Smart | Efficient | Digital Control",
-            image: geyserImg,
-            alt: "Air Source Water Geyser",
-        }
-    ];
+/** Every figure is read off the published spec sheet. Nothing is estimated. */
+const SLIDES: Slide[] = [
+    {
+        id: 'white',
+        line1: 'Alpine', line2: 'White',
+        subtitle: 'High-gloss white, the classic. Full 1.5 ton output, WiFi, Eco and PKR modes, and a ten-year compressor warranty.',
+        image: white15tImg, alt: 'Elios Alpine White 1.5 ton inverter air conditioner',
+        field: FIELDS.white,
+        readout: [['18,000', 'BTU cooling'], ['12.6', 'EER'], ['1,428 W', 'Rated input']],
+    },
+    {
+        id: 'noir',
+        line1: 'Noir', line2: 'Pro',
+        subtitle: 'Matte black over the 1.5 ton platform, moving 850 m³/hr for rooms that take longer to pull down.',
+        image: black15tImg, alt: 'Elios Noir Pro 1.5 ton inverter air conditioner',
+        field: FIELDS.noir,
+        readout: [['18,000', 'BTU cooling'], ['850', 'm³/hr airflow'], ['10 yr', 'Compressor']],
+    },
+    {
+        id: 'silver',
+        line1: 'Apex', line2: 'Silver',
+        subtitle: 'Brushed silver for offices and open-plan rooms, with the same 12.6 EER rating as the rest of the 1.5 ton line.',
+        image: silver15tImg, alt: 'Elios Apex Silver 1.5 ton inverter air conditioner',
+        field: FIELDS.silver,
+        readout: [['18,000', 'BTU cooling'], ['12.6', 'EER'], ['58 W', 'Indoor motor']],
+    },
+    {
+        id: 'grey',
+        line1: 'Minima', line2: 'Grey',
+        subtitle: 'A metallic grey finish that disappears against a painted wall, running the 1.0 ton platform at 440 W when the room is only holding temperature.',
+        image: grey1tImg, alt: 'Elios Minima Grey 1.0 ton inverter air conditioner',
+        field: FIELDS.grey,
+        readout: [['12,000', 'BTU cooling'], ['12.5', 'EER'], ['440 W', 'Minimum draw']],
+    },
+    {
+        id: 'blossom',
+        line1: 'Blossom', line2: 'Edition',
+        subtitle: 'A luxury floral art panel over the same twin-rotary inverter platform — part of the room rather than an appliance bolted to the wall.',
+        image: flower1tImg, alt: 'Elios Blossom Edition 1.0 ton inverter air conditioner',
+        field: FIELDS.blossom,
+        readout: [['12,000', 'BTU cooling'], ['12.5', 'EER'], ['0.8 Kg', 'R410A charge']],
+    },
+    {
+        id: 'geyser',
+        line1: 'Air Source', line2: 'Geyser',
+        subtitle: 'Smart heating cycles and digital control — the tank heats on a schedule you set instead of staying hot around the clock.',
+        image: geyserImg, alt: 'Elios air source water geyser',
+        field: FIELDS.geyser,
+        readout: [['Air source', 'Type'], ['Digital', 'Control'], ['Smart', 'Cycles']],
+    },
+];
+
+const DWELL = 7000;
+
+export default function Hero() {
+    const [index, setIndex] = useState(0);
+    const [held, setHeld] = useState(false);
+    const { setField } = useField();
+    const unitRef = useRef<HTMLDivElement>(null);
+    const reduced = useRef(false);
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            nextSlide();
-        }, 6000);
-        return () => clearInterval(interval);
-    }, [currentSlide]);
+        reduced.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }, []);
 
-    const handleSlideChange = (newSlide: number) => {
-        if (isAnimating) return;
-        setIsAnimating(true);
-        setCurrentSlide(newSlide);
-        setTimeout(() => setIsAnimating(false), 700);
-    };
+    const go = useCallback((next: number) => setIndex((next + SLIDES.length) % SLIDES.length), []);
 
-    const nextSlide = () => {
-        handleSlideChange(currentSlide === slides.length - 1 ? 0 : currentSlide + 1);
-    };
+    /**
+     * The field is swapped instantly, not cross-faded.
+     *
+     * Several of these products invert the page — Noir Pro is dark-on-light
+     * while the rest are light-on-dark — and interpolating between an inverted
+     * pair necessarily passes through a mid-grey where ground and ink meet and
+     * nothing is readable. Snapping the colours and flying the content back in
+     * (every element below is keyed to the slide and carries `anim-rise`) keeps
+     * the change legible at every frame and reads as a deliberate cut.
+     */
 
-    const prevSlide = () => {
-        handleSlideChange(currentSlide === 0 ? slides.length - 1 : currentSlide - 1);
-    };
+    // Publish the active field so the navigation can ride the same ground.
+    useEffect(() => {
+        setField(SLIDES[index].field);
+        return () => setField(null);
+    }, [index, setField]);
+
+    useEffect(() => {
+        if (held || reduced.current) return;
+        const t = setTimeout(() => go(index + 1), DWELL);
+        return () => clearTimeout(t);
+    }, [index, held, go]);
+
+    // Gentle parallax; skipped entirely under reduced motion.
+    useEffect(() => {
+        if (reduced.current) return;
+        const onScroll = () => {
+            const el = unitRef.current;
+            if (!el) return;
+            const y = Math.min(window.scrollY, window.innerHeight);
+            el.style.translate = `0 ${y * 0.12}px`;
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+
+    const slide = SLIDES[index];
 
     return (
-        <section className="relative w-full h-[calc(110vh-110px)] overflow-hidden bg-brand-blue">
-            {/* Video Background Layer */}
-            <div className="absolute inset-0 z-0">
-                <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover"
-                >
-                    <source src={videoBg} type="video/mp4" />
-                </video>
-                {/* Gradient Overlay for contrast */}
-                <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/40 to-transparent"></div>
-            </div>
+        <section
+            id="hero"
+            style={fieldVars(slide.field)}
+            className="relative overflow-hidden flex items-center"
+            onMouseEnter={() => setHeld(true)}
+            onMouseLeave={() => setHeld(false)}
+            onFocusCapture={() => setHeld(true)}
+            onBlurCapture={() => setHeld(false)}
+            aria-roledescription="carousel"
+            aria-label="Elios product range"
+        >
+            <div
+                className="absolute inset-0 field-ground"
+                aria-hidden="true"
+            />
 
-            {/* Content Layer */}
-            <div className="relative z-10 w-full h-full flex items-center justify-between px-6 lg:px-24 max-w-[1600px] mx-auto">
+            <div
+                className="absolute right-[2%] top-1/2 -translate-y-1/2 rounded-full blur-[30px] pointer-events-none anim-breathe field-haze"
+                style={{ width: 'min(62vw, 780px)', height: 'min(62vw, 780px)' }}
+                aria-hidden="true"
+            />
 
-                {/* Navigation Arrows */}
-                <button
-                    onClick={prevSlide}
-                    disabled={isAnimating}
-                    className="absolute left-6 z-20 w-12 h-12 flex items-center justify-center text-brand-blue bg-white/10 backdrop-blur-md rounded-full border border-white/20 hover:bg-white/40 hover:scale-110 transition-all disabled:opacity-50 hidden md:flex cursor-pointer"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                    </svg>
-                </button>
+            <div
+                className="wrap relative w-full grid lg:grid-cols-[1.02fr_.98fr] items-center gap-8 lg:gap-10 py-10 field-ink"
+                style={{ paddingTop: 'calc(57px + 2rem)' }}
+            >
+                {/* Left — the argument */}
+                <div className="order-2 lg:order-1 flex flex-col justify-center">
+                    <p key={`k-${slide.id}`} className="kicker field-faint flex items-center gap-3 mb-6 lg:mb-8 anim-rise">
+                        <span className="w-1.5 h-1.5 rounded-full anim-ping flex-none" style={{ background: 'var(--accent)' }} />
+                        Digital inverter · Built in Pakistan
+                    </p>
 
-                <button
-                    onClick={nextSlide}
-                    disabled={isAnimating}
-                    className="absolute right-6 z-20 w-12 h-12 flex items-center justify-center text-brand-blue bg-white/10 backdrop-blur-md rounded-full border border-white/20 hover:bg-white/40 hover:scale-110 transition-all disabled:opacity-50 hidden md:flex cursor-pointer"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                    </svg>
-                </button>
+                    <h1 key={`t-${slide.id}`} className="display text-[2.5rem] sm:text-[3.25rem] lg:text-[4rem] xl:text-[4.75rem] anim-rise">
+                        {slide.line1}
+                        <span className="block heavy">{slide.line2}</span>
+                    </h1>
 
-                {/* Slides */}
-                <div className="w-full h-full relative">
-                    {slides.map((slide, index) => (
-                        <div
-                            key={slide.id}
-                            className={`absolute inset-0 w-full h-full flex flex-col md:flex-row items-center justify-center md:justify-between gap-12 transition-all duration-700 ease-in-out ${index === currentSlide
-                                ? 'opacity-100 translate-x-0'
-                                : index < currentSlide ? 'opacity-0 -translate-x-full' : 'opacity-0 translate-x-full'
-                                }`}
+                    <p
+                        key={`s-${slide.id}`}
+                        className="mt-6 text-[15px] lg:text-base leading-relaxed max-w-[46ch] anim-rise field-soft"
+                        style={{ animationDelay: '110ms' }}
+                    >
+                        {slide.subtitle}
+                    </p>
+
+                    <div key={`c-${slide.id}`} className="flex flex-wrap gap-3 mt-9 anim-rise" style={{ animationDelay: '170ms' }}>
+                        <Link
+                            to="/products"
+                            className="btn"
+                            style={{ background: slide.field.accent, color: onAccent(slide.field.accent) }}
                         >
-                            {/* Text Section (Left) */}
-                            <div className="w-full md:w-[55%] flex flex-col items-center md:items-start text-center md:text-left pt-10 md:pt-0">
-                                <div className={`transition-all duration-700 delay-300 transform ${index === currentSlide ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                                    <h1
-                                        className="font-montserrat text-[42px] md:text-[60px] lg:text-[72px] font-black text-[#192A5E] leading-[1.1] mb-6 uppercase tracking-tight"
-                                        style={{ fontFamily: 'Montserrat, sans-serif' }}
-                                    >
-                                        {slide.title.split(' ').map((word, i) => (
-                                            <span key={i} className={i === 0 ? 'block' : 'inline'}>{word} </span>
-                                        ))}
-                                    </h1>
-                                    <div className="h-1.5 w-24 bg-brand-blue mb-8 hidden md:block rounded-full"></div>
-                                    <h2
-                                        className="font-montserrat text-[22px] md:text-[28px] text-gray-600 font-medium mb-12 uppercase tracking-[0.2em]"
-                                        style={{ fontFamily: 'Montserrat, sans-serif' }}
-                                    >
-                                        {slide.subtitle}
-                                    </h2>
-                                    <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                                        <Link
-                                            to="/products"
-                                            className="bg-brand-blue text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-brand-blue-dark transition-all shadow-xl hover:-translate-y-1 active:translate-y-0 animate-pulse hover:animate-none"
-                                        >
-                                            EXPLORE PRODUCTS
-                                        </Link>
-                                        <Link
-                                            to="/support"
-                                            className="bg-white/40 backdrop-blur-md text-brand-blue border-2 border-brand-blue/20 px-10 py-4 rounded-full font-bold text-lg hover:bg-white transition-all"
-                                        >
-                                            SUPPORT
-                                        </Link>
-                                    </div>
-                                </div>
-                            </div>
+                            Book on WhatsApp
+                        </Link>
+                        <Link to="/#app" className="btn btn-line">See the app</Link>
+                    </div>
 
-                            {/* Image Section (Right) */}
-                            <div className={`w-full md:w-[40%] flex justify-center md:justify-end transition-all duration-1000 delay-500 transform ${index === currentSlide ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-90 rotate-3'
-                                }`}>
-                                <div className="relative group">
-                                    <div className="absolute inset-0 bg-brand-blue/10 blur-[80px] rounded-full group-hover:bg-brand-blue/20 transition-all"></div>
-                                    <img
-                                        src={slide.image}
-                                        alt={slide.alt}
-                                        className="relative z-10 max-w-full h-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-float"
-                                    />
-                                </div>
+                    <dl
+                        key={`r-${slide.id}`}
+                        className="flex mt-11 pt-6 border-t max-w-[560px] anim-rise"
+                        style={{ borderColor: 'color-mix(in srgb, var(--ink) 16%, transparent)', animationDelay: '220ms' }}
+                    >
+                        {slide.readout.map(([value, label], i) => (
+                            <div
+                                key={label}
+                                className={`flex flex-col ${i > 0 ? 'pl-5 ml-5 sm:pl-8 sm:ml-8 border-l' : ''}`}
+                                style={{ borderColor: 'color-mix(in srgb, var(--ink) 12%, transparent)' }}
+                            >
+                                <dd
+                                    className="num text-[clamp(22px,2.5vw,34px)] leading-none tracking-tight field-accent"
+                                    style={{ fontVariationSettings: "'wdth' 108, 'wght' 500" }}
+                                >
+                                    {value}
+                                </dd>
+                                <dt
+                                    className="text-[10.5px] uppercase tracking-[0.2em] mt-2.5 field-faint"
+                                >
+                                    {label}
+                                </dt>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </dl>
+                </div>
+
+                {/* Right — the unit */}
+                <div className="order-1 lg:order-2 relative flex items-center justify-center min-h-[38svh] lg:min-h-[calc(var(--vh)*0.5)]">
+                    <div ref={unitRef} key={`i-${slide.id}`} className="relative z-10 flex justify-center w-full anim-unit">
+                        <img
+                            src={slide.image}
+                            alt={slide.alt}
+                            className="w-auto object-contain max-w-[92%]"
+                            style={{
+                                maxHeight: 'calc(var(--vh) * 0.52)',
+                                filter: 'drop-shadow(0 40px 60px rgba(0,0,0,.5))',
+                            }}
+                        />
+                    </div>
+
+                    {/* The swatch rail: each dot is the colour measured from that unit */}
+                    <div
+                        className="absolute z-20 right-0 bottom-0 flex gap-2.5 lg:flex-col max-lg:static max-lg:justify-center max-lg:mt-4 max-lg:w-full"
+                        role="tablist"
+                        aria-label="Choose a finish"
+                    >
+                        {SLIDES.map((s, i) => (
+                            <button
+                                key={s.id}
+                                role="tab"
+                                aria-selected={i === index}
+                                aria-label={`${s.line1} ${s.line2}`}
+                                onClick={() => { go(i); setHeld(true); }}
+                                className="relative w-[34px] h-[34px] rounded-full cursor-pointer transition-transform duration-500 hover:scale-110"
+                                style={{
+                                    background: s.field.unit,
+                                    border: '1px solid color-mix(in srgb, var(--ink) 22%, transparent)',
+                                    boxShadow: i === index ? '0 0 0 2px var(--ground), 0 0 0 3px var(--ink)' : 'none',
+                                }}
+                            />
+                        ))}
+                    </div>
                 </div>
             </div>
 
-            {/* Progress Bars */}
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex gap-3">
-                {slides.map((_, i) => (
-                    <button
-                        key={i}
-                        onClick={() => handleSlideChange(i)}
-                        className={`transition-all duration-300 h-1.5 rounded-full ${i === currentSlide ? 'w-12 bg-brand-blue' : 'w-3 bg-gray-300 hover:bg-gray-400'}`}
-                        aria-label={`Go to slide ${i + 1}`}
-                    />
-                ))}
+            {/* Position marker */}
+            <div
+                className="absolute bottom-6 inset-x-0 wrap hidden md:flex items-end justify-between pointer-events-none field-ink field-faint"
+            >
+                <span className="num text-[11px] tracking-[0.2em] uppercase">
+                    {String(index + 1).padStart(2, '0')} / {String(SLIDES.length).padStart(2, '0')}
+                </span>
+                <span className="text-[11px] tracking-[0.2em] uppercase">Scroll</span>
             </div>
         </section>
     );

@@ -1,70 +1,460 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&family=Oswald:wght@200..700&family=Questrial&family=Syne:wght@400..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&display=swap');
 @import "tailwindcss";
 
+/* ==========================================================================
+   ELIOS — "ADAPTIVE FIELD"
+
+   The rule: the ground is decided by the object standing on it. A white unit
+   gets a dark field; the black unit flips the page light; the Android app is
+   navy, so the app's field is navy. Every accent in src/theme/fields.ts was
+   sampled from the real asset rather than chosen by eye.
+   ========================================================================== */
+
 @theme {
-  --font-heading: "Syne", sans-serif;
-  --font-body: "Syne", sans-serif;
-  --font-ui: "Oswald", sans-serif;
-  --font-montserrat: "Montserrat", sans-serif;
-  --font-questrial: "Questrial", sans-serif;
+  --font-sans: "Archivo", system-ui, sans-serif;
 
-  --color-brand-blue: #1E4186;
-  --color-brand-blue-dark: #152e60;
-  --color-brand-text: #000000;
-  --color-footer-bg: #f3f4f6;
+  /* Fixed grounds */
+  --color-ground: #0E0F11;
+  --color-ground-alt: #08090A;
+  --color-card: #131518;
+  --color-card-lift: #16191D;
 
-  --radius-xl: 1.5rem;
-  --radius-2xl: 2rem;
+  /* Edges — two weights, nothing between */
+  --color-edge: #1E2126;
+  --color-edge-strong: #2C3138;
 
-  --shadow-premium: 0 10px 30px -10px rgba(30, 65, 134, 0.3);
-  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  /* Ink */
+  --color-ink: #F4F4F2;
+  --color-ink-soft: #A7ADB4;
+  --color-ink-dim: #7C8288;
+
+  /* Brand — preserved, and now a real surface rather than a hairline */
+  --color-brand: #1E4186;
+  --color-brand-lift: #4E86E8;
+  --color-brand-pale: #9CBAF2;
+
+  --color-signal-good: #6FBF8B;
+  --color-signal-bad: #E08C7A;
+
+  --ease-field: cubic-bezier(.16, 1, .3, 1);
 }
 
-/* Glassmorphism Utilities */
-.glass-card {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: var(--shadow-glass);
+/* The adaptive field. Registered so the ground can genuinely cross-fade
+   rather than snap — React writes these per product. */
+@property --ground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #0E0F11;
 }
 
-.glass-dark {
-  background: rgba(30, 65, 134, 0.1);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+@property --ink {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #F4F4F2;
 }
 
-/* Custom Animations */
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(100px);
+@property --accent {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #8FA3B8;
+}
+
+@property --haze {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #1B2430;
+}
+
+:root {
+  --shell: 1440px;
+  --pad: clamp(20px, 5vw, 64px);
+  --r: 18px;
+  /* One capped viewport unit: an unusually tall window must not stretch the
+     hero composition. min-height beats max-height, so cap with min(). */
+  --vh: min(100svh, 1180px);
+
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background-color: var(--color-ground);
+  line-height: 1.6;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--color-ground);
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+::selection {
+  background: var(--color-brand);
+  color: var(--color-ink);
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand-lift);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Component CSS lives in this layer so Tailwind utilities can still win.
+   Unlayered CSS outranks every utility — that lesson cost real debugging. */
+@layer components {
+
+  /* ---------------- type ---------------- */
+  .display {
+    font-variation-settings: 'wdth' 112, 'wght' 380;
+    text-transform: uppercase;
+    line-height: .92;
+    letter-spacing: -.02em;
   }
 
-  to {
+  .display strong,
+  .display .heavy {
+    font-weight: inherit;
+    font-variation-settings: 'wdth' 118, 'wght' 640;
+  }
+
+  .kicker {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    color: var(--color-ink-dim);
+  }
+
+  .lede {
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--color-ink-soft);
+    max-width: 54ch;
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /* ---------------- shell ---------------- */
+  .wrap {
+    max-width: var(--shell);
+    margin-inline: auto;
+    padding-inline: var(--pad);
+  }
+
+  .band {
+    padding-block: clamp(80px, 11vw, 150px);
+    background: var(--color-ground);
+  }
+
+  .band-alt {
+    background: var(--color-ground-alt);
+  }
+
+  /* ---------------- buttons ---------------- */
+  .btn {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 13px 26px;
+    border-radius: 100px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    white-space: nowrap;
+    transition: transform .4s var(--ease-field), background-color .4s, color .4s,
+      border-color .4s, box-shadow .4s, opacity .3s;
+  }
+
+  .btn:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+  }
+
+  /* Solid = the field's own ink, so it inverts with the field */
+  .btn-solid {
+    background: var(--ink, var(--color-ink));
+    color: var(--ground, var(--color-ground));
+  }
+
+  .btn-solid:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px -10px color-mix(in srgb, var(--ink, #F4F4F2) 45%, transparent);
+  }
+
+  .btn-line {
+    border-color: color-mix(in srgb, var(--ink, #F4F4F2) 42%, transparent);
+    color: var(--ink, var(--color-ink));
+  }
+
+  .btn-line:hover:not(:disabled) {
+    border-color: var(--ink, var(--color-ink));
+    transform: translateY(-2px);
+  }
+
+  /* --on-accent flips with the accent's luminance so the label stays legible
+     whichever way the field went. React computes it. */
+  .btn-accent {
+    background: var(--accent, var(--color-brand-lift));
+    color: var(--on-accent, #06101F);
+  }
+
+  .btn-accent:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 34px -10px var(--accent, var(--color-brand-lift));
+  }
+
+  /* ---------------- surfaces ---------------- */
+  .card {
+    background: var(--color-card);
+    border: 1px solid var(--color-edge);
+    border-radius: var(--r);
+    transition: transform .6s var(--ease-field), border-color .6s, background-color .6s;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-7px);
+    border-color: var(--color-edge-strong);
+    background: var(--color-card-lift);
+  }
+
+  .chip {
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    padding: 9px 17px;
+    border-radius: 100px;
+    border: 1px solid var(--color-edge-strong);
+    color: var(--color-ink-soft);
+    transition: border-color .4s, color .4s, transform .4s var(--ease-field);
+  }
+
+  .chip:hover {
+    border-color: #4A5158;
+    color: var(--color-ink);
+    transform: translateY(-2px);
+  }
+
+  /* ---------------- fields ---------------- */
+  .field {
+    width: 100%;
+    font: inherit;
+    font-size: 15px;
+    color: var(--color-ink);
+    background: #0B0C0E;
+    border: 1px solid var(--color-edge-strong);
+    border-radius: 12px;
+    padding: 13px 16px;
+    outline: none;
+    transition: border-color .3s, box-shadow .3s, background-color .3s;
+  }
+
+  .field::placeholder {
+    color: #6E747A;
     opacity: 1;
-    transform: translateX(0);
+  }
+
+  .field:hover:not(:disabled) {
+    border-color: #3B4149;
+  }
+
+  .field:focus {
+    border-color: var(--color-brand-lift);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-lift) 20%, transparent);
+  }
+
+  .field:disabled,
+  .field[readonly] {
+    opacity: .6;
+    cursor: not-allowed;
+  }
+
+  .field-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--color-ink-dim);
+  }
+
+  select.field {
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--color-ink-soft) 50%),
+      linear-gradient(135deg, var(--color-ink-soft) 50%, transparent 50%);
+    background-position: calc(100% - 19px) calc(50% + 1px), calc(100% - 14px) calc(50% + 1px);
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 40px;
+  }
+
+  select.field option {
+    background: #14171A;
+    color: var(--color-ink);
+  }
+
+  /* ---------------- ledger ---------------- */
+  .ledger {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ledger th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--color-ink-dim);
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--color-edge-strong);
+    white-space: nowrap;
+  }
+
+  .ledger td {
+    padding: 16px;
+    font-size: 14.5px;
+    color: var(--color-ink);
+    border-bottom: 1px solid var(--color-edge);
+    vertical-align: top;
+  }
+
+  .ledger tbody tr {
+    transition: background-color .4s;
+  }
+
+  .ledger tbody tr:hover td {
+    background: var(--color-card);
+  }
+
+  /* ---------------- marquee ---------------- */
+  .marquee {
+    background: var(--color-ground-alt);
+    border-block: 1px solid #1A1C1F;
+    padding-block: 20px;
+    overflow: hidden;
+    display: flex;
+    gap: 56px;
+    white-space: nowrap;
+  }
+
+  .mq-track {
+    display: flex;
+    gap: 56px;
+    align-items: center;
+    flex: none;
+    animation: mq-slide 38s linear infinite;
+  }
+
+  .marquee:hover .mq-track {
+    animation-play-state: paused;
+  }
+
+  .mq-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--color-ink-dim);
+    flex: none;
+  }
+
+  .mq-item b {
+    color: #D8DADD;
+    font-weight: 600;
   }
 }
 
-@keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-100px);
-  }
+/* The adaptive hero.
+   The custom properties are swapped instantly and the *concrete* properties
+   that consume them are what cross-fade. Transitioning the registered custom
+   properties directly looks tidier but silently freezes them at their first
+   value in Chrome, leaving dark text on a dark ground — the fade has to live
+   on background-color/color, which every engine animates reliably. */
+#hero {
+  --ground: #0C0D0F;
+  --ink: #F4F4F2;
+  --accent: #9FB6C4;
+  --haze: #1D2733;
+  --on-accent: #06101F;
+  min-height: var(--vh);
+}
 
+/* These carry the field. A CSS transition is deliberately NOT used: a
+   transition whose value comes from a custom property stalls at its first
+   value in Chrome, which left dark text on a dark ground. Hero.tsx drives
+   them with the Web Animations API instead, passing concrete colours, so
+   ground and ink always interpolate in lockstep and contrast never breaks
+   mid-fade. */
+.field-ground {
+  background-color: var(--ground);
+}
+
+.field-ink {
+  color: var(--ink);
+}
+
+.field-accent {
+  color: var(--accent);
+}
+
+.field-haze {
+  background-image: radial-gradient(circle, var(--haze) 0%, transparent 68%);
+}
+
+/* Secondary text derives from the animated parent colour rather than a
+   color-mix() on the raw variable, so it fades with it instead of snapping. */
+.field-soft {
+  color: inherit;
+  opacity: .66;
+}
+
+.field-faint {
+  color: inherit;
+  /* 11px tracked caps are small text and must clear 4.5:1 against the field */
+  opacity: .72;
+}
+
+/* ---------------- motion ----------------
+   One reveal grammar, one ambient breath. Defined as real classes: Tailwind
+   arbitrary animation values break on the comma inside cubic-bezier() and
+   strand the element at opacity 0. */
+
+@keyframes mq-slide {
   to {
-    opacity: 1;
-    transform: translateX(0);
+    transform: translateX(-100%);
   }
 }
 
-@keyframes fadeInUp {
+@keyframes field-rise {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(14px);
   }
 
   to {
@@ -73,72 +463,132 @@
   }
 }
 
-@keyframes float {
-  0% {
-    transform: translateY(0px);
+@keyframes unit-in {
+  from {
+    opacity: 0;
+    transform: translateY(26px) scale(.965);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes breathe {
+
+  0%,
+  100% {
+    transform: translateY(-50%) scale(1);
+    opacity: .9;
   }
 
   50% {
-    transform: translateY(-10px);
+    transform: translateY(-52%) scale(1.07);
+    opacity: 1;
+  }
+}
+
+@keyframes ping-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent, #8FA3B8) 60%, transparent);
+  }
+
+  70% {
+    box-shadow: 0 0 0 11px transparent;
   }
 
   100% {
-    transform: translateY(0px);
+    box-shadow: 0 0 0 0 transparent;
   }
 }
 
-.animate-slide-in-right {
-  animation: slideInRight 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+@media (prefers-reduced-motion: no-preference) {
+
+  /* Scroll reveal — content is present in the DOM and simply arrives */
+  .rv {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity .95s var(--ease-field), transform .95s var(--ease-field);
+    will-change: opacity, transform;
+  }
+
+  .rv.in {
+    opacity: 1;
+    transform: none;
+  }
+
+  .anim-rise {
+    animation: field-rise .8s var(--ease-field) both;
+  }
+
+  .anim-unit {
+    animation: unit-in 1s var(--ease-field) both;
+  }
+
+  .anim-breathe {
+    animation: breathe 11s ease-in-out infinite;
+  }
+
+  .anim-ping {
+    animation: ping-ring 2.6s ease-out infinite;
+  }
 }
 
-.animate-slide-in-left {
-  animation: slideInLeft 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+@media (prefers-reduced-motion: reduce) {
+
+  .mq-track,
+  .anim-rise,
+  .anim-unit,
+  .anim-breathe,
+  .anim-ping {
+    animation: none !important;
+  }
+
+  .rv {
+    opacity: 1;
+    transform: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: .01ms !important;
+  }
 }
 
-.animate-fade-in-up {
-  animation: fadeInUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+/* ---------------- scrollbar ---------------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2C3138 transparent;
 }
 
-.animate-float {
-  animation: float 4s ease-in-out infinite;
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
 
-:root {
-  font-family: var(--font-body);
-  line-height: 1.5;
-  font-weight: 400;
-  color: var(--color-brand-text);
-  background-color: #ffffff;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  scroll-behavior: smooth;
+*::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  min-height: 100vh;
-  background-color: #ffffff;
-  overflow-x: hidden;
+*::-webkit-scrollbar-thumb {
+  background: #2C3138;
+  border: 2px solid var(--color-ground);
+  border-radius: 100px;
 }
 
-a {
-  text-decoration: inherit;
-  transition: all 0.3s ease;
+*::-webkit-scrollbar-thumb:hover {
+  background: #3F464E;
 }
 
-.btn-premium {
-  @apply relative overflow-hidden transition-all duration-300 active:scale-95 shadow-lg;
+/* The wordmark ships as brand blue on transparent — invisible on a dark
+   field, so it is lifted to ink and returns to brand blue on a light one. */
+.wordmark {
+  filter: brightness(0) invert(1);
+  transition: filter .9s var(--ease-field);
 }
 
-.btn-premium::after {
-  content: '';
-  @apply absolute inset-0 bg-white/20 opacity-0 transition-opacity duration-300;
-}
-
-.btn-premium:hover::after {
-  @apply opacity-100;
+.wordmark-dark {
+  filter: none;
 }

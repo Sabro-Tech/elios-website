@@ -1,27 +1,26 @@
+import { useNavigate } from 'react-router-dom';
 import Hero from '../components/Hero';
+import Marquee from '../components/Marquee';
+import AboutUs from '../components/AboutUs';
 import FeaturesIntro from '../components/FeaturesIntro';
 import Features from '../components/Features';
+import FinishLadder from '../components/FinishLadder';
 import CustomerSupport from '../components/CustomerSupport';
-import AboutUs from '../components/AboutUs';
 import ContactForm from '../components/ContactForm';
 
 export default function Home() {
+    const navigate = useNavigate();
+
     return (
-        <div className="w-full">
+        <main className="w-full">
             <Hero />
+            <Marquee />
+            <AboutUs />
             <FeaturesIntro />
-            <div id="features">
-                <Features />
-            </div>
-            <div id="support">
-                <CustomerSupport />
-            </div>
-            <div id="about">
-                <AboutUs />
-            </div>
-            <div id="contact">
-                <ContactForm />
-            </div>
-        </div>
+            <Features />
+            <FinishLadder onSelect={(key) => navigate(`/products?finish=${key}`)} />
+            <CustomerSupport />
+            <ContactForm />
+        </main>
     );
 }

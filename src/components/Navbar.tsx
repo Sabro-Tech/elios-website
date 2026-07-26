@@ -1,183 +1,206 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
 import navbarLogo from '../assets/elios-navbar.png';
 import { useAuth } from '../context/AuthContext';
+import { useField } from '../context/FieldContext';
+import { isLight, fieldVars, type Field } from '../theme/fields';
+
+const DARK: Field = {
+    unit: '#000000',
+    ground: '#0B0C0E',
+    ink: '#F4F4F2',
+    accent: '#4E86E8',
+    haze: '#1B2430',
+};
 
 export default function Navbar() {
     const { user, userData, logout } = useAuth();
+    const { field } = useField();
     const navigate = useNavigate();
+    const { pathname } = useLocation();
+
     const [showDropdown, setShowDropdown] = useState(false);
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [isScrolled, setIsScrolled] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [pastHero, setPastHero] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Over the hero the bar rides the product's field; past it, it settles dark.
+    useEffect(() => {
+        const onScroll = () => setPastHero(window.scrollY > window.innerHeight * 0.72);
+        onScroll();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, [pathname]);
 
     useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 20);
+        if (!showDropdown) return;
+        const onClick = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setShowDropdown(false);
         };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+        const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setShowDropdown(false);
+        document.addEventListener('mousedown', onClick);
+        document.addEventListener('keydown', onKey);
+        return () => {
+            document.removeEventListener('mousedown', onClick);
+            document.removeEventListener('keydown', onKey);
+        };
+    }, [showDropdown]);
 
-    const userName = userData ? `${userData.firstname} ${userData.lastname}` : user?.email || "User";
+    useEffect(() => {
+        document.body.style.overflow = menuOpen ? 'hidden' : '';
+        return () => { document.body.style.overflow = ''; };
+    }, [menuOpen]);
+
+    useEffect(() => { setMenuOpen(false); }, [pathname]);
+
+    const active = !pastHero && field ? field : DARK;
+    const lightField = isLight(active.ground);
+    const userName = userData ? `${userData.firstname} ${userData.lastname}` : user?.email || 'Account';
 
     const navLinks = [
-        { name: 'HOME', path: '/' },
-        { name: 'PRODUCTS', path: '/products' },
-        { name: 'FEATURES', path: '/#features' },
-        { name: 'ABOUT US', path: '/#about' },
-        { name: 'CONTACT US', path: '/#contact' },
-        { name: 'CUSTOMER SUPPORT', path: '/support' },
+        { name: 'About', path: '/#about' },
+        { name: 'Technology', path: '/#features' },
+        { name: 'The App', path: '/#app' },
+        { name: 'Range', path: '/products' },
+        { name: 'Support', path: '/support' },
     ];
+    if (userData?.role === 'admin') navLinks.push({ name: 'Admin', path: '/admin' });
 
-    if (userData?.role === 'admin') {
-        navLinks.push({ name: 'ADMIN', path: '/admin' });
-    }
+    const handleLogout = async () => {
+        await logout();
+        setShowDropdown(false);
+        setMenuOpen(false);
+        navigate('/');
+    };
 
     return (
-        <header
-            className={`sticky top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white/80 backdrop-blur-md shadow-sm h-[70px]' : 'bg-white h-[85px]'
-                }`}
-        >
-            <div className="w-full h-full flex items-center justify-between px-8 max-w-[1440px] mx-auto">
-                {/* Logo */}
-                <Link to="/" className="flex-shrink-0 transition-transform duration-300 hover:scale-105">
-                    <img
-                        src={navbarLogo}
-                        alt="Elios Logo"
-                        className="h-[35px] w-auto"
-                    />
-                </Link>
+        <header style={fieldVars(active)} className="fixed inset-x-0 top-0 z-50">
+            <div
+                className="backdrop-blur-xl border-b transition-[background-color,color,border-color] duration-700"
+                style={{
+                    background: 'color-mix(in srgb, var(--ground) 74%, transparent)',
+                    color: 'var(--ink)',
+                    borderBottomColor: 'color-mix(in srgb, var(--ink) 10%, transparent)',
+                }}
+            >
+                <div className="wrap flex items-center justify-between gap-5 py-3.5">
+                    <Link to="/" aria-label="Elios — home" className="flex-none">
+                        <img
+                            src={navbarLogo}
+                            alt="Elios"
+                            className={`h-[17px] w-auto wordmark ${lightField ? 'wordmark-dark' : ''}`}
+                        />
+                    </Link>
 
-                {/* Desktop Navigation */}
-                <div className="hidden md:flex items-center gap-10">
-                    <nav className="flex items-center gap-8">
-                        {navLinks.map((link) => (
+                    <nav className="hidden lg:flex gap-7 text-[13px] font-medium" aria-label="Main">
+                        {navLinks.map((l) => (
                             <Link
-                                key={link.name}
-                                to={link.path}
-                                className="font-ui text-[15px] font-semibold text-brand-blue tracking-[0.05em] hover:text-brand-text relative group transition-colors"
-                                style={{ fontFamily: 'Oswald, sans-serif' }}
+                                key={l.name}
+                                to={l.path}
+                                className="relative py-1 opacity-70 hover:opacity-100 transition-opacity after:absolute after:left-0 after:bottom-0 after:h-px after:w-0 after:bg-current after:transition-[width] after:duration-500 hover:after:w-full"
                             >
-                                {link.name}
-                                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-blue transition-all duration-300 group-hover:w-full"></span>
+                                {l.name}
                             </Link>
                         ))}
                     </nav>
 
-                    {/* User Section (Desktop) */}
-                    {user ? (
-                        <div className="relative">
-                            <button
-                                onClick={() => setShowDropdown(!showDropdown)}
-                                className="flex items-center gap-2 font-ui text-[15px] font-semibold text-brand-blue bg-brand-blue/5 px-4 py-2 rounded-full hover:bg-brand-blue/10 transition-all"
-                                style={{ fontFamily: 'Oswald, sans-serif' }}
-                            >
-                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                {userName}
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-4 h-4 transition-transform duration-300 ${showDropdown ? 'rotate-180' : ''}`}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                                </svg>
-                            </button>
+                    <div className="hidden lg:flex items-center gap-3">
+                        {user ? (
+                            <div className="relative" ref={dropdownRef}>
+                                <button
+                                    onClick={() => setShowDropdown(!showDropdown)}
+                                    aria-expanded={showDropdown}
+                                    aria-haspopup="menu"
+                                    className="btn btn-line max-w-[230px]"
+                                >
+                                    <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ background: 'var(--accent)' }} />
+                                    <span className="truncate normal-case tracking-normal">{userName}</span>
+                                </button>
 
-                            {showDropdown && (
-                                <div className="absolute right-0 mt-3 w-52 bg-white/95 backdrop-blur-sm border border-gray-100 shadow-xl rounded-2xl py-2 z-50 animate-fade-in-up">
-                                    <button
-                                        onClick={async () => {
-                                            await logout();
-                                            setShowDropdown(false);
-                                            navigate('/');
-                                        }}
-                                        className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 font-ui transition-colors group"
-                                        style={{ fontFamily: 'Oswald, sans-serif' }}
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 group-hover:text-red-500 transition-colors">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-                                        </svg>
-                                        <span className="group-hover:text-red-600 transition-colors">Log Out</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <Link to="/login" className="flex items-center gap-3 group bg-brand-blue text-white px-6 py-2.5 rounded-full hover:bg-brand-blue-dark transition-all shadow-md hover:shadow-lg">
-                            <span className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
-                                    <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
-                                </svg>
-                            </span>
-                            <span className="font-ui text-[15px] font-bold tracking-wider" style={{ fontFamily: 'Oswald, sans-serif' }}>LOG IN</span>
+                                {showDropdown && (
+                                    <div role="menu" className="absolute right-0 mt-2 w-56 card overflow-hidden py-1.5 anim-rise">
+                                        <Link
+                                            to="/support"
+                                            role="menuitem"
+                                            onClick={() => setShowDropdown(false)}
+                                            className="block px-5 py-3 text-[14px] text-ink-soft hover:text-ink hover:bg-card-lift transition-colors"
+                                        >
+                                            My support
+                                        </Link>
+                                        <button
+                                            role="menuitem"
+                                            onClick={handleLogout}
+                                            className="w-full text-left px-5 py-3 text-[14px] text-ink-soft hover:text-ink hover:bg-card-lift transition-colors cursor-pointer"
+                                        >
+                                            Sign out
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <Link to="/login" className="btn btn-line">Sign in</Link>
+                        )}
+                        <Link
+                            to="/products"
+                            className="btn"
+                            style={{ background: active.ink, color: active.ground }}
+                        >
+                            Book on WhatsApp
                         </Link>
-                    )}
-                </div>
+                    </div>
 
-                {/* Mobile Hamburger Button */}
-                <div className="md:hidden">
                     <button
-                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        className="p-2 text-brand-text hover:text-brand-blue focus:outline-none transition-colors"
+                        onClick={() => setMenuOpen(!menuOpen)}
+                        aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+                        aria-expanded={menuOpen}
+                        className="lg:hidden p-2 -mr-2 cursor-pointer"
                     >
-                        <div className="w-7 h-6 relative flex flex-col justify-between items-center">
-                            <span className={`w-full h-0.5 bg-current rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-[11px]' : ''}`}></span>
-                            <span className={`w-full h-0.5 bg-current rounded-full transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-0' : 'opacity-100'}`}></span>
-                            <span className={`w-full h-0.5 bg-current rounded-full transition-all duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-[11px]' : ''}`}></span>
-                        </div>
+                        <span className="block w-6 h-4 relative">
+                            <span className={`absolute left-0 top-0 w-full h-px bg-current transition-transform duration-500 ${menuOpen ? 'translate-y-[7.5px] rotate-45' : ''}`} />
+                            <span className={`absolute left-0 top-1/2 w-full h-px bg-current transition-opacity duration-300 ${menuOpen ? 'opacity-0' : ''}`} />
+                            <span className={`absolute left-0 bottom-0 w-full h-px bg-current transition-transform duration-500 ${menuOpen ? '-translate-y-[7.5px] -rotate-45' : ''}`} />
+                        </span>
                     </button>
                 </div>
             </div>
 
-            {/* Mobile Menu Overlay */}
-            <div className={`md:hidden fixed inset-0 top-[70px] bg-white transition-all duration-500 ease-in-out ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none translate-y-[-20px]'
-                }`}>
-                <div className="flex flex-col gap-6 p-10">
-                    {navLinks.map((link, index) => (
+            {/* Mobile sheet */}
+            <div
+                className={`lg:hidden fixed inset-x-0 top-[57px] bottom-0 overflow-y-auto transition-all duration-500 ${menuOpen ? 'opacity-100 pointer-events-auto translate-y-0' : 'opacity-0 pointer-events-none -translate-y-2'
+                    }`}
+                style={{ background: 'var(--ground)', color: 'var(--ink)' }}
+            >
+                <nav className="wrap flex flex-col pt-8 pb-14" aria-label="Mobile">
+                    {navLinks.map((l) => (
                         <Link
-                            key={link.name}
-                            to={link.path}
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="font-ui text-[24px] font-semibold text-brand-blue tracking-wider hover:text-brand-text transition-all block animate-fade-in-up"
-                            style={{
-                                fontFamily: 'Oswald, sans-serif',
-                                animationDelay: `${index * 0.1}s`
-                            }}
+                            key={l.name}
+                            to={l.path}
+                            onClick={() => setMenuOpen(false)}
+                            className="display text-[1.75rem] py-4 border-b opacity-90 hover:opacity-100 transition-opacity"
+                            style={{ borderColor: 'color-mix(in srgb, var(--ink) 14%, transparent)' }}
                         >
-                            {link.name}
+                            {l.name}
                         </Link>
                     ))}
 
-                    <div className="mt-8 pt-8 border-t border-gray-100">
+                    <div className="mt-9 flex flex-col gap-3">
+                        <Link
+                            to="/products"
+                            onClick={() => setMenuOpen(false)}
+                            className="btn w-full"
+                            style={{ background: active.ink, color: active.ground }}
+                        >
+                            Book on WhatsApp
+                        </Link>
                         {user ? (
-                            <div className="flex flex-col gap-6">
-                                <span className="font-ui text-[18px] font-medium text-gray-500 uppercase tracking-widest" style={{ fontFamily: 'Oswald, sans-serif' }}>
-                                    Welcome, <span className="text-brand-blue font-bold">{userName}</span>
-                                </span>
-                                <button
-                                    onClick={async () => {
-                                        await logout();
-                                        setIsMobileMenuOpen(false);
-                                        navigate('/');
-                                    }}
-                                    className="font-ui text-[20px] font-bold text-red-500 text-left uppercase tracking-wider"
-                                    style={{ fontFamily: 'Oswald, sans-serif' }}
-                                >
-                                    Log Out
-                                </button>
-                            </div>
+                            <button onClick={handleLogout} className="btn btn-line w-full">Sign out</button>
                         ) : (
-                            <Link
-                                to="/login"
-                                onClick={() => setIsMobileMenuOpen(false)}
-                                className="flex items-center gap-4 group"
-                            >
-                                <span className="w-10 h-10 bg-brand-blue text-white rounded-full flex items-center justify-center transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                                        <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
-                                    </svg>
-                                </span>
-                                <span className="font-ui text-brand-blue text-[24px] font-bold tracking-wider uppercase" style={{ fontFamily: 'Oswald, sans-serif' }}>Log In</span>
+                            <Link to="/login" onClick={() => setMenuOpen(false)} className="btn btn-line w-full">
+                                Sign in
                             </Link>
                         )}
                     </div>
-                </div>
+                </nav>
             </div>
         </header>
     );

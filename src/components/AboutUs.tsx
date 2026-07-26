@@ -1,44 +1,62 @@
+import { Link } from 'react-router-dom';
+import Reveal from './Reveal';
+import noirImg from '../assets/1_5ton-black-nobg-hero.png';
+
+const TAGS = ['Twin-Rotary T3', 'R410A', '50°C rated', 'WiFi', 'Eco mode'];
 
 export default function AboutUs() {
     return (
-        <section id="about" className="w-full bg-[#f8fafc] py-32 px-6 relative overflow-hidden">
-            {/* Subtle background decoration */}
-            <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-brand-blue/5 blur-[120px] rounded-full"></div>
-            <div className="absolute bottom-0 left-0 w-1/4 h-1/4 bg-brand-blue/5 blur-[100px] rounded-full"></div>
+        <section id="about" className="band">
+            <div className="wrap grid lg:grid-cols-[.92fr_1.08fr] gap-10 lg:gap-[76px] items-center">
 
-            <div className="max-w-[1200px] mx-auto text-center flex flex-col items-center gap-12 relative z-10">
-                {/* Title */}
-                <div className="animate-fade-in-up">
-                    <h2 className="font-heading font-bold text-[48px] md:text-[64px] text-brand-blue uppercase leading-tight tracking-tight">
-                        About Us
+                {/* The Noir Pro is near-black, so its frame goes light. Same rule
+            the hero runs, applied to a fixed section. */}
+                <Reveal
+                    className="relative rounded-[18px] overflow-hidden aspect-[4/3.4] grid place-items-center border border-[#E2E3DE]"
+                    style={{ background: 'radial-gradient(circle at 50% 40%, #F2F2EF 0%, #D6D7D2 74%)' }}
+                >
+                    <img
+                        src={noirImg}
+                        alt="Elios Noir Pro in matte black"
+                        className="max-h-[78%] w-auto object-contain"
+                        style={{ filter: 'drop-shadow(0 26px 38px rgba(0,0,0,.34))' }}
+                    />
+                    <span className="absolute left-6 bottom-5 text-[10.5px] uppercase tracking-[0.2em] text-[#6A6D68]">
+                        Noir Pro · Matte Black
+                    </span>
+                </Reveal>
+
+                <Reveal delay={120}>
+                    <p className="kicker mb-6">About Elios</p>
+                    <h2 className="display text-[2.25rem] sm:text-[3rem] lg:text-[3.5rem]">
+                        Built here,
+                        <span className="block heavy">for the heat here.</span>
                     </h2>
-                    <div className="h-1.5 w-20 bg-brand-blue mx-auto mt-4 rounded-full"></div>
-                </div>
 
-                {/* Content */}
-                <div className="flex flex-col gap-8 max-w-4xl">
-                    <p className="font-questrial text-[22px] md:text-[24px] text-gray-700 leading-relaxed animate-fade-in-up [animation-delay:200ms]">
-                        At <span className="font-bold text-brand-blue">ELIOS</span>, we're redefining <span className="font-bold">home comfort</span> through innovation. As a Pakistan-based brand, we specialize in advanced <span className="font-bold text-brand-blue">Digital Inverter Air Conditioners</span> that combine <span className="font-bold">energy efficiency</span>, <span className="font-bold">intelligent technology</span>, and <span className="font-bold">sleek design</span>.
-                    </p>
-
-                    <p className="font-questrial text-[22px] md:text-[24px] text-gray-700 leading-relaxed animate-fade-in-up [animation-delay:400ms]">
-                        With features like <span className="font-bold">Wireless</span> control, real-time <span className="font-bold">power consumption monitoring</span>, and <span className="font-bold">customizable modes</span>, ELIOS products are built to put you in control—anytime, anywhere.
-                    </p>
-
-                    <p className="font-questrial text-[22px] md:text-[24px] text-gray-700 leading-relaxed animate-fade-in-up [animation-delay:600ms]">
-                        We believe in making modern living effortless. From <span className="font-bold text-brand-blue">cutting-edge tech</span> to <span className="font-bold">responsive customer support</span>, every step we take is driven by one goal: to create <span className="font-bold">smarter</span>, more <span className="font-bold">comfortable homes</span> across Pakistan.
-                    </p>
-
-                    <div className="flex flex-col gap-4 mt-12 animate-fade-in-up [animation-delay:800ms]">
-                        <p className="font-questrial text-[22px] md:text-[26px] text-brand-blue font-black tracking-wide">
-                            LIVE SMART. LIVE COOL. LIVE ELIOS.
-                        </p>
-                        <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
-                        <p className="font-questrial text-[16px] text-gray-400 uppercase tracking-widest font-bold">
-                            A Brand by Kascon Technologies (Pvt) Ltd.
-                        </p>
+                    <div className="flex flex-wrap gap-2 mt-7 mb-7">
+                        {TAGS.map((t) => <span key={t} className="chip">{t}</span>)}
                     </div>
-                </div>
+
+                    <p className="lede mb-4">
+                        A fixed-speed unit knows two states: flat out, or off. It overshoots, stops,
+                        drifts warm, and slams back on — and you pay for every one of those swings.
+                    </p>
+                    <p className="lede mb-4">
+                        An Elios inverter modulates instead, holding your target on as little as
+                        440 W, and reporting exactly what it is drawing while it does. Less cycling
+                        means less wear, which is why the compressor carries a ten-year warranty
+                        rather than a slogan.
+                    </p>
+                    <p className="lede mb-9">
+                        Engineered and supported from Islamabad, for houses that run their cooling
+                        hard for five months of the year on electricity that is not cheap.
+                    </p>
+
+                    <div className="flex flex-wrap gap-3">
+                        <Link to="/#features" className="btn btn-solid">See the technology</Link>
+                        <Link to="/#app" className="btn btn-line">Watch the panel</Link>
+                    </div>
+                </Reveal>
             </div>
         </section>
     );

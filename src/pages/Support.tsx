@@ -11,80 +11,85 @@ interface UserData {
     address: string;
 }
 
+const AC_OPTIONS = [
+    '1 Ton Split',
+    '1.5 Ton Split - LED',
+    '2 Ton Split - LCD',
+    'Floor Standing - 2 Ton',
+    'Floor Standing - 4 Ton',
+    'Cassette Type - 2 Ton',
+    'Cassette Type - 4 Ton',
+];
+
+const SERIAL_PATTERN = /^[A-Z]\d{4}-[A-Z]\d{4}-[A-Z]{2}\d{4}$/;
+
+function StatusMark({ value, kind }: { value: string; kind: 'warranty' | 'complaint' }) {
+    const v = (value || '').toLowerCase();
+    let tone = 'text-ink-soft border-edge-strong';
+    if (kind === 'warranty' || v === 'resolved') tone = 'text-signal-good border-signal-good/50';
+    else if (v === 'in progress') tone = 'text-brand-lift border-brand-lift/50';
+
+    return (
+        <span className={`inline-block text-[10.5px] uppercase tracking-[0.16em] border rounded-full px-2.5 py-1 whitespace-nowrap ${tone}`}>
+            {value}
+        </span>
+    );
+}
+
+const CloseIcon = () => (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={1.4} aria-hidden="true">
+        <path d="M6 18L18 6M6 6l12 12" />
+    </svg>
+);
+
 export default function Support() {
     const { user } = useAuth();
     const [userData, setUserData] = useState<UserData | null>(null);
-    const [isWarrantyVisible, setIsWarrantyVisible] = useState(false);
-    const [isComplaintVisible, setIsComplaintVisible] = useState(false);
+    const [warrantyOpen, setWarrantyOpen] = useState(false);
+    const [complaintOpen, setComplaintOpen] = useState(false);
     const [warranties, setWarranties] = useState<any[]>([]);
     const [complaints, setComplaints] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [submitLoading, setSubmitLoading] = useState(false);
-    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [submitting, setSubmitting] = useState(false);
+    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-    // Original AC Options
-    const acOptions = [
-        "1 Ton Split",
-        "1.5 Ton Split - LED",
-        "2 Ton Split - LCD",
-        "Floor Standing - 2 Ton",
-        "Floor Standing - 4 Ton",
-        "Cassette Type - 2 Ton",
-        "Cassette Type - 4 Ton",
-    ];
+    const today = new Date().toISOString().split('T')[0];
 
-    // Form States (Restored to original backend structure)
     const [warrantyData, setWarrantyData] = useState({
-        firstname: '',
-        lastname: '',
-        phone: '',
-        email: '',
-        devicedetails: '',
-        deviceserial: '',
-        startdate: new Date().toISOString().split('T')[0],
-        agreed: false
+        firstname: '', lastname: '', phone: '', email: '',
+        devicedetails: '', deviceserial: '', startdate: today, agreed: false,
     });
 
     const [complaintData, setComplaintData] = useState({
-        firstname: '',
-        lastname: '',
-        phone: '',
-        email: '',
-        complaint: '',
-        agreed: false
+        firstname: '', lastname: '', phone: '', email: '', complaint: '', agreed: false,
     });
 
     useEffect(() => {
         const fetchData = async () => {
             if (!user) return;
             try {
-                // Fetch User Profile
                 const data = await apiFetch<UserData>('/customers/me');
                 setUserData(data);
-                setWarrantyData(prev => ({
-                    ...prev,
-                    firstname: data.firstname,
-                    lastname: data.lastname,
-                    phone: data.phone,
-                    email: data.email
-                }));
-                setComplaintData(prev => ({
-                    ...prev,
-                    firstname: data.firstname,
-                    lastname: data.lastname,
-                    phone: data.phone,
-                    email: data.email
-                }));
 
-                // Fetch Warranties & Complaints
+                const identity = {
+                    firstname: data.firstname, lastname: data.lastname,
+                    phone: data.phone, email: data.email,
+                };
+                setWarrantyData((p) => ({ ...p, ...identity }));
+                setComplaintData((p) => ({ ...p, ...identity }));
+
                 const [w, c] = await Promise.all([
                     apiFetch<any[]>('/warranties'),
-                    apiFetch<any[]>('/complaints')
+                    apiFetch<any[]>('/complaints'),
                 ]);
                 setWarranties(w);
                 setComplaints(c);
             } catch (err) {
                 console.error(err);
+                setMessage({
+                    type: 'error',
+                    text: 'Could not load your records. Refresh the page, or call +92 321 8548557 if it keeps failing.',
+                });
             } finally {
                 setLoading(false);
             }
@@ -92,362 +97,342 @@ export default function Support() {
         fetchData();
     }, [user]);
 
-    const handleWarrantySubmit = async (e: React.FormEvent) => {
+    useEffect(() => {
+        if (!warrantyOpen && !complaintOpen) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key !== 'Escape') return;
+            setWarrantyOpen(false);
+            setComplaintOpen(false);
+        };
+        document.addEventListener('keydown', onKey);
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.removeEventListener('keydown', onKey);
+            document.body.style.overflow = '';
+        };
+    }, [warrantyOpen, complaintOpen]);
+
+    useEffect(() => {
+        if (!message) return;
+        const t = setTimeout(() => setMessage(null), 8000);
+        return () => clearTimeout(t);
+    }, [message]);
+
+    const submitWarranty = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Corrected Serial Number Validation (L0000-L0000-LL0000)
-        const serialRegex = /^[A-Z]\d{4}-[A-Z]\d{4}-[A-Z]{2}\d{4}$/;
-        if (!serialRegex.test(warrantyData.deviceserial)) {
-            setMessage({ type: 'error', text: 'Invalid Serial Number format. Expected: A2627-E1046-XX1234' });
+        if (!SERIAL_PATTERN.test(warrantyData.deviceserial)) {
+            setMessage({
+                type: 'error',
+                text: 'That serial number does not match the format on the unit sticker. It looks like A2627-E1046-XX1234.',
+            });
             return;
         }
-
         if (!warrantyData.agreed) return;
-        setSubmitLoading(true);
+
+        setSubmitting(true);
         setMessage(null);
-
         try {
-            // ID, ending date and status are all assigned server-side now
-            const created = await apiFetch('/warranties', {
-                method: 'POST',
-                body: warrantyData
-            });
-
-            setMessage({ type: 'success', text: 'Warranty registered successfully!' });
-            setIsWarrantyVisible(false);
+            const created = await apiFetch('/warranties', { method: 'POST', body: warrantyData });
+            setMessage({ type: 'success', text: 'Warranty registered. It is listed below and on file with our service desk.' });
+            setWarrantyOpen(false);
             setWarranties([created, ...warranties]);
         } catch (err: any) {
             console.error('Warranty submission error:', err);
-            setMessage({ type: 'error', text: err?.message || 'Failed to register warranty. Please try again.' });
+            setMessage({ type: 'error', text: err?.message || 'That did not save. Check your connection and try again.' });
         } finally {
-            setSubmitLoading(false);
+            setSubmitting(false);
         }
     };
 
-    const handleComplaintSubmit = async (e: React.FormEvent) => {
+    const submitComplaint = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!complaintData.agreed) return;
-        setSubmitLoading(true);
+
+        setSubmitting(true);
         setMessage(null);
-
         try {
-            // ID, dates and status are assigned server-side now
-            const created = await apiFetch('/complaints', {
-                method: 'POST',
-                body: complaintData
-            });
-
-            setMessage({ type: 'success', text: 'Complaint submitted successfully!' });
-            setIsComplaintVisible(false);
+            const created = await apiFetch('/complaints', { method: 'POST', body: complaintData });
+            setMessage({ type: 'success', text: 'Complaint filed. It is in the service queue and you will be contacted on the number on your account.' });
+            setComplaintOpen(false);
             setComplaints([created, ...complaints]);
         } catch (err: any) {
             console.error('Complaint submission error:', err);
-            setMessage({ type: 'error', text: err?.message || 'Failed to submit complaint. Please try again.' });
+            setMessage({ type: 'error', text: err?.message || 'That did not send. Check your connection and try again.' });
         } finally {
-            setSubmitLoading(false);
+            setSubmitting(false);
         }
     };
 
-    if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-white">
-            <div className="w-12 h-12 border-4 border-brand-blue/30 border-t-brand-blue rounded-full animate-spin"></div>
-        </div>
-    );
+    if (loading) {
+        return (
+            <main className="min-h-screen flex flex-col items-center justify-center gap-5">
+                <div className="w-8 h-8 rounded-full border border-edge-strong border-t-ink animate-spin" />
+                <p className="kicker">Loading your records</p>
+            </main>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-[#f8fafc]">
-            {/* Hero Section */}
-            <section className="bg-brand-blue py-24 px-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-1/2 h-full bg-white/5 skew-x-[-20deg] translate-x-1/2"></div>
-                <div className="max-w-[1200px] mx-auto relative z-10">
-                    <span className="text-white/60 font-bold uppercase tracking-[0.3em] text-sm mb-4 block animate-fade-in-up">Customer Support</span>
-                    <h1 className="text-5xl md:text-7xl font-heading font-black text-white uppercase leading-none animate-fade-in-up [animation-delay:100ms]">
-                        Elite Care <br />
-                        <span className="text-white/40">Portal</span>
-                    </h1>
+        <main className="min-h-screen">
+            <section className="pt-[120px] lg:pt-[150px] pb-12 border-b border-edge">
+                <div className="wrap flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+                    <div>
+                        <p className="kicker mb-5">Support desk</p>
+                        <h1 className="display text-[2rem] sm:text-[2.75rem] lg:text-[3.5rem]">
+                            {userData?.firstname ? <>Hello, <span className="heavy">{userData.firstname}.</span></> : 'Your account'}
+                        </h1>
+                        {userData && (
+                            <p className="mt-5 text-[15px] text-ink-dim">{userData.email} · {userData.phone}</p>
+                        )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+                        <button onClick={() => setWarrantyOpen(true)} className="btn btn-accent"
+                            style={{ ['--accent' as string]: 'var(--color-brand-lift)', ['--on-accent' as string]: '#06101F' }}>
+                            Register a warranty
+                        </button>
+                        <button onClick={() => setComplaintOpen(true)} className="btn btn-line">File a complaint</button>
+                    </div>
                 </div>
             </section>
 
-            <main className="max-w-[1200px] mx-auto py-16 px-6 relative z-20">
-                {/* Stats / Welcome */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 -mt-32">
-                    <div className="bg-white p-8 rounded-[2rem] shadow-premium group hover:bg-brand-blue transition-all duration-500">
-                        <div className="w-12 h-12 bg-brand-blue/5 rounded-2xl flex items-center justify-center text-brand-blue mb-6 group-hover:bg-white/20 group-hover:text-white transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                            </svg>
-                        </div>
-                        <h3 className="text-gray-400 text-sm font-bold uppercase tracking-widest mb-1 group-hover:text-white/60">Welcome Back</h3>
-                        <p className="text-brand-blue font-black text-2xl group-hover:text-white">{userData?.firstname} {userData?.lastname}</p>
+            <div className="wrap py-14 lg:py-20 flex flex-col gap-16">
+                <section>
+                    <div className="flex items-baseline justify-between gap-6 mb-6">
+                        <h2 className="display text-[1.5rem] sm:text-[1.875rem]">Registered warranties</h2>
+                        <span className="kicker num">{warranties.length} on file</span>
                     </div>
 
-                    <button
-                        onClick={() => setIsWarrantyVisible(true)}
-                        className="bg-white p-8 rounded-[2rem] shadow-premium text-left group hover:bg-brand-blue transition-all duration-500"
-                    >
-                        <div className="w-12 h-12 bg-brand-blue/5 rounded-2xl flex items-center justify-center text-brand-blue mb-6 group-hover:bg-white/20 group-hover:text-white transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
-                            </svg>
-                        </div>
-                        <h3 className="text-gray-400 text-sm font-bold uppercase tracking-widest mb-1 group-hover:text-white/60">New Registration</h3>
-                        <p className="text-brand-blue font-black text-2xl group-hover:text-white">Register Warranty</p>
-                    </button>
-
-                    <button
-                        onClick={() => setIsComplaintVisible(true)}
-                        className="bg-white p-8 rounded-[2rem] shadow-premium text-left group hover:bg-brand-blue transition-all duration-500"
-                    >
-                        <div className="w-12 h-12 bg-brand-blue/5 rounded-2xl flex items-center justify-center text-brand-blue mb-6 group-hover:bg-white/20 group-hover:text-white transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286zm0 13.036h.008v.008H12v-.008z" />
-                            </svg>
-                        </div>
-                        <h3 className="text-gray-400 text-sm font-bold uppercase tracking-widest mb-1 group-hover:text-white/60">Submit Inquiry</h3>
-                        <p className="text-brand-blue font-black text-2xl group-hover:text-white">File a Complaint</p>
-                    </button>
-                </div>
-
-                {/* Content Tables */}
-                <div className="flex flex-col gap-16">
-                    {/* Warranties Table */}
-                    <div className="animate-fade-in-up">
-                        <div className="flex justify-between items-end mb-8">
-                            <div>
-                                <h2 className="text-3xl font-heading font-black text-brand-blue uppercase">Registered Warranties</h2>
-                                <div className="h-1 w-20 bg-brand-blue mt-2 rounded-full"></div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-[2rem] shadow-premium overflow-hidden border border-gray-100">
-                            <table className="w-full text-left">
-                                <thead className="bg-[#f8fafc] border-b border-gray-100">
-                                    <tr>
-                                        {['ID', 'Device', 'Serial Number', 'Start Date', 'End Date', 'Status'].map(head => (
-                                            <th key={head} className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">{head}</th>
-                                        ))}
+                    <div className="card overflow-x-auto">
+                        <table className="ledger min-w-[860px]">
+                            <thead>
+                                <tr>
+                                    <th>ID</th><th>Device</th><th>Serial number</th>
+                                    <th>Start</th><th>Ends</th><th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {warranties.length ? warranties.map((w) => (
+                                    <tr key={w.id}>
+                                        <td className="num text-ink-dim">{w.id}</td>
+                                        <td>{w.devicedetails}</td>
+                                        <td className="num text-brand-lift whitespace-nowrap">{w.deviceserial}</td>
+                                        <td className="num text-ink-soft whitespace-nowrap">{w.startdate}</td>
+                                        <td className="num text-ink-soft whitespace-nowrap">{w.endingdate}</td>
+                                        <td><StatusMark value={w.status || 'Verified'} kind="warranty" /></td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {warranties.length > 0 ? warranties.map(w => (
-                                        <tr key={w.id} className="hover:bg-gray-50 transition-colors group">
-                                            <td className="px-8 py-6 font-bold text-brand-blue">{w.id}</td>
-                                            <td className="px-8 py-6 text-gray-600">{w.devicedetails}</td>
-                                            <td className="px-8 py-6 text-center">
-                                                <span className="px-4 py-2 font-ui text-xs font-bold bg-gray-50 rounded-xl uppercase tracking-widest text-brand-blue/70">
-                                                    {w.deviceserial}
-                                                </span>
-                                            </td>
-                                            <td className="px-8 py-6 text-gray-500">{w.startdate}</td>
-                                            <td className="px-8 py-6 text-red-500 font-bold">{w.endingdate}</td>
-                                            <td className="px-8 py-6">
-                                                <span className="px-4 py-1.5 rounded-full bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-widest">
-                                                    {w.status || 'Verified'}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    )) : (
-                                        <tr>
-                                            <td colSpan={6} className="px-8 py-12 text-center text-gray-400 font-questrial">No warranties found.</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    {/* Complaints Table */}
-                    <div className="animate-fade-in-up [animation-delay:200ms]">
-                        <div className="flex justify-between items-end mb-8">
-                            <div>
-                                <h2 className="text-3xl font-heading font-black text-brand-blue uppercase">Recent Complaints</h2>
-                                <div className="h-1 w-20 bg-brand-blue mt-2 rounded-full"></div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-[2rem] shadow-premium overflow-hidden border border-gray-100">
-                            <table className="w-full text-left">
-                                <thead className="bg-[#f8fafc] border-b border-gray-100">
+                                )) : (
                                     <tr>
-                                        {['ID', 'Location', 'Date', 'Complaint', 'Status'].map(head => (
-                                            <th key={head} className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">{head}</th>
-                                        ))}
+                                        <td colSpan={6} className="py-14 text-center">
+                                            <p className="text-ink-soft">No warranties registered yet.</p>
+                                            <p className="text-[14px] text-ink-dim mt-2">
+                                                Register your unit and the record stays with us — no receipt to keep.
+                                            </p>
+                                            <button onClick={() => setWarrantyOpen(true)} className="btn btn-line mt-6">
+                                                Register a warranty
+                                            </button>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {complaints.length > 0 ? complaints.map(c => (
-                                        <tr key={c.id} className="hover:bg-gray-50 transition-colors group">
-                                            <td className="px-8 py-6 font-bold text-brand-blue">{c.id}</td>
-                                            <td className="px-8 py-6">
-                                                <div className="text-gray-900 font-bold">{userData?.city}</div>
-                                                <div className="text-xs text-gray-400">{userData?.address}</div>
-                                            </td>
-                                            <td className="px-8 py-6 text-gray-500">{c.complaintdate}</td>
-                                            <td className="px-8 py-6 text-gray-500 max-w-xs truncate">{c.complaint}</td>
-                                            <td className="px-8 py-6">
-                                                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${c.complaintstatus === 'Resolved' ? 'bg-green-50 text-green-600' :
-                                                    c.complaintstatus === 'In Progress' ? 'bg-blue-50 text-blue-600' : 'bg-yellow-50 text-yellow-600'
-                                                    }`}>
-                                                    {c.complaintstatus || 'Registered'}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    )) : (
-                                        <tr>
-                                            <td colSpan={5} className="px-8 py-12 text-center text-gray-400 font-questrial">No complaints found.</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
-                </div>
-            </main>
+                </section>
 
-            {/* Warranty Modal */}
-            {isWarrantyVisible && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-                    <div className="absolute inset-0 bg-brand-blue/20 backdrop-blur-md" onClick={() => setIsWarrantyVisible(false)}></div>
-                    <div className="w-full max-w-2xl bg-white rounded-[3rem] p-8 md:p-12 shadow-premium relative animate-fade-in-up overflow-y-auto max-h-[90vh]">
-                        <h2 className="text-3xl font-heading font-black text-brand-blue uppercase mb-8">Register Warranty</h2>
-                        <form onSubmit={handleWarrantySubmit} className="flex flex-col gap-6">
-                            <div className="grid grid-cols-2 gap-6">
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-xs font-black text-brand-blue uppercase tracking-[0.2em] ml-1">First Name</label>
-                                    <input readOnly value={warrantyData.firstname} className="h-14 px-6 rounded-2xl bg-gray-50 text-gray-400 font-medium outline-none" />
+                <section>
+                    <div className="flex items-baseline justify-between gap-6 mb-6">
+                        <h2 className="display text-[1.5rem] sm:text-[1.875rem]">Complaints</h2>
+                        <span className="kicker num">{complaints.length} filed</span>
+                    </div>
+
+                    <div className="card overflow-x-auto">
+                        <table className="ledger min-w-[860px]">
+                            <thead>
+                                <tr>
+                                    <th>ID</th><th>Location</th><th>Date</th><th>Detail</th><th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {complaints.length ? complaints.map((c) => (
+                                    <tr key={c.id}>
+                                        <td className="num text-ink-dim">{c.id}</td>
+                                        <td>
+                                            <span className="block">{userData?.city}</span>
+                                            <span className="block text-[13px] text-ink-dim mt-0.5">{userData?.address}</span>
+                                        </td>
+                                        <td className="num text-ink-soft whitespace-nowrap">{c.complaintdate}</td>
+                                        <td className="max-w-xs text-ink-soft">{c.complaint}</td>
+                                        <td><StatusMark value={c.complaintstatus || 'Registered'} kind="complaint" /></td>
+                                    </tr>
+                                )) : (
+                                    <tr>
+                                        <td colSpan={5} className="py-14 text-center">
+                                            <p className="text-ink-soft">Nothing filed — which is the good outcome.</p>
+                                            <p className="text-[14px] text-ink-dim mt-2">
+                                                If a unit is not behaving, tell us here and it goes straight into the service queue.
+                                            </p>
+                                            <button onClick={() => setComplaintOpen(true)} className="btn btn-line mt-6">
+                                                File a complaint
+                                            </button>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            {/* Warranty registration */}
+            {warrantyOpen && (
+                <div role="dialog" aria-modal="true" aria-label="Register warranty"
+                    className="fixed inset-0 z-100 flex items-end sm:items-center justify-center sm:p-6">
+                    <div className="absolute inset-0 bg-ground/85 backdrop-blur-sm" onClick={() => setWarrantyOpen(false)} />
+
+                    <div className="relative card w-full max-w-2xl p-7 sm:p-10 max-h-[92vh] overflow-y-auto anim-rise">
+                        <div className="flex items-start justify-between gap-6 mb-7">
+                            <div>
+                                <p className="kicker mb-3">New registration</p>
+                                <h2 className="display text-[1.5rem] sm:text-[1.875rem]">Register a warranty</h2>
+                            </div>
+                            <button onClick={() => setWarrantyOpen(false)} aria-label="Close"
+                                className="flex-none w-10 h-10 grid place-items-center rounded-full border border-edge-strong text-ink-dim hover:text-ink transition-colors cursor-pointer">
+                                <CloseIcon />
+                            </button>
+                        </div>
+
+                        <form onSubmit={submitWarranty} className="flex flex-col gap-5">
+                            <div className="grid sm:grid-cols-2 gap-5">
+                                <div className="flex flex-col gap-2.5">
+                                    <label htmlFor="w-first" className="field-label">First name</label>
+                                    <input id="w-first" readOnly value={warrantyData.firstname} className="field" />
                                 </div>
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-xs font-black text-brand-blue uppercase tracking-[0.2em] ml-1">Last Name</label>
-                                    <input readOnly value={warrantyData.lastname} className="h-14 px-6 rounded-2xl bg-gray-50 text-gray-400 font-medium outline-none" />
+                                <div className="flex flex-col gap-2.5">
+                                    <label htmlFor="w-last" className="field-label">Last name</label>
+                                    <input id="w-last" readOnly value={warrantyData.lastname} className="field" />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-xs font-black text-brand-blue uppercase tracking-[0.2em] ml-1">Model Type</label>
-                                    <select
-                                        required
-                                        className="h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-4 focus:ring-brand-blue/5 outline-none font-bold text-brand-blue appearance-none"
-                                        onChange={(e) => setWarrantyData({ ...warrantyData, devicedetails: e.target.value })}
-                                        value={warrantyData.devicedetails}
-                                    >
-                                        <option value="">Select AC Type</option>
-                                        {acOptions.map(opt => (
-                                            <option key={opt} value={opt}>{opt}</option>
-                                        ))}
+
+                            <div className="grid sm:grid-cols-2 gap-5">
+                                <div className="flex flex-col gap-2.5">
+                                    <label htmlFor="w-model" className="field-label">Model type</label>
+                                    <select id="w-model" required className="field" value={warrantyData.devicedetails}
+                                        onChange={(e) => setWarrantyData({ ...warrantyData, devicedetails: e.target.value })}>
+                                        <option value="">Select a model</option>
+                                        {AC_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
                                     </select>
                                 </div>
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-xs font-black text-brand-blue uppercase tracking-[0.2em] ml-1">Serial Number</label>
-                                    <input
-                                        required
-                                        placeholder="A2627-E1046-XX1234"
-                                        className="h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-4 focus:ring-brand-blue/5 outline-none font-medium text-brand-blue"
-                                        onChange={(e) => setWarrantyData({ ...warrantyData, deviceserial: e.target.value.toUpperCase() })}
+                                <div className="flex flex-col gap-2.5">
+                                    <label htmlFor="w-serial" className="field-label">Serial number</label>
+                                    <input id="w-serial" required placeholder="A2627-E1046-XX1234" className="field num"
                                         value={warrantyData.deviceserial}
-                                    />
+                                        onChange={(e) => setWarrantyData({ ...warrantyData, deviceserial: e.target.value.toUpperCase() })} />
+                                    <p className="text-[13px] text-ink-dim">Printed on the sticker on the indoor unit.</p>
                                 </div>
                             </div>
-                            <div className="flex flex-col gap-2">
-                                <label className="text-xs font-black text-brand-blue uppercase tracking-[0.2em] ml-1">Purchase Date</label>
-                                <input
-                                    type="date"
-                                    required
-                                    min={new Date().toISOString().split('T')[0]}
-                                    className="h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-4 focus:ring-brand-blue/5 outline-none font-medium text-brand-blue"
-                                    onChange={(e) => setWarrantyData({ ...warrantyData, startdate: e.target.value })}
+
+                            <div className="flex flex-col gap-2.5">
+                                <label htmlFor="w-date" className="field-label">Purchase date</label>
+                                {/* max, not min: a unit bought last month must still be registerable */}
+                                <input id="w-date" type="date" required max={today} className="field num"
                                     value={warrantyData.startdate}
-                                />
+                                    onChange={(e) => setWarrantyData({ ...warrantyData, startdate: e.target.value })} />
                             </div>
-                            <div className="flex items-center gap-4 p-4 bg-brand-blue/5 rounded-2xl">
-                                <input
-                                    type="checkbox"
-                                    id="agreeW"
-                                    className="w-5 h-5 rounded border-gray-300 text-brand-blue focus:ring-brand-blue"
+
+                            <label htmlFor="agreeW" className="flex items-start gap-3.5 rounded-xl border border-edge bg-ground-alt p-4 cursor-pointer">
+                                <input type="checkbox" id="agreeW" className="mt-0.5 w-4 h-4 accent-[#4E86E8] cursor-pointer"
                                     checked={warrantyData.agreed}
-                                    onChange={(e) => setWarrantyData({ ...warrantyData, agreed: e.target.checked })}
-                                />
-                                <label htmlFor="agreeW" className="text-sm text-gray-600 font-questrial">
-                                    I confirm that the serial number matches the product sticker.
-                                </label>
-                            </div>
-                            <button
-                                type="submit"
-                                disabled={submitLoading || !warrantyData.agreed}
-                                className="w-full h-16 rounded-2xl bg-brand-blue text-white font-black uppercase tracking-widest shadow-premium hover:bg-brand-blue-dark transition-all disabled:opacity-50"
-                            >
-                                {submitLoading ? 'Registering...' : 'Register Now'}
+                                    onChange={(e) => setWarrantyData({ ...warrantyData, agreed: e.target.checked })} />
+                                <span className="text-[14px] text-ink-soft leading-relaxed">
+                                    I confirm the serial number above matches the sticker on the unit.
+                                </span>
+                            </label>
+
+                            <button type="submit" disabled={submitting || !warrantyData.agreed}
+                                className="btn btn-accent w-full py-4"
+                                style={{ ['--accent' as string]: 'var(--color-brand-lift)', ['--on-accent' as string]: '#06101F' }}>
+                                {submitting ? 'Registering…' : 'Register warranty'}
                             </button>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* Complaint Modal */}
-            {isComplaintVisible && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-                    <div className="absolute inset-0 bg-brand-blue/20 backdrop-blur-md" onClick={() => setIsComplaintVisible(false)}></div>
-                    <div className="w-full max-w-2xl bg-white rounded-[3rem] p-8 md:p-12 shadow-premium relative animate-fade-in-up overflow-y-auto max-h-[90vh]">
-                        <h2 className="text-3xl font-heading font-black text-brand-blue uppercase mb-8">File a Complaint</h2>
-                        <form onSubmit={handleComplaintSubmit} className="flex flex-col gap-6">
-                            <div className="grid grid-cols-2 gap-6">
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-xs font-black text-brand-blue uppercase tracking-[0.2em] ml-1">First Name</label>
-                                    <input readOnly value={complaintData.firstname} className="h-14 px-6 rounded-2xl bg-gray-50 text-gray-400 font-medium outline-none" />
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-xs font-black text-brand-blue uppercase tracking-[0.2em] ml-1">Last Name</label>
-                                    <input readOnly value={complaintData.lastname} className="h-14 px-6 rounded-2xl bg-gray-50 text-gray-400 font-medium outline-none" />
-                                </div>
-                            </div>
-                            <div className="flex flex-col gap-2">
-                                <label className="text-xs font-black text-brand-blue uppercase tracking-[0.2em] ml-1">Complaint Details</label>
-                                <textarea
-                                    required
-                                    rows={4}
-                                    placeholder="Describe the issue you're facing..."
-                                    className="w-full p-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium text-brand-blue resize-none"
-                                    onChange={(e) => setComplaintData({ ...complaintData, complaint: e.target.value })}
-                                ></textarea>
-                            </div>
-                            <div className="flex items-center gap-4 p-4 bg-brand-blue/5 rounded-2xl">
-                                <input
-                                    type="checkbox"
-                                    id="agreeC"
-                                    className="w-5 h-5 rounded border-gray-300 text-brand-blue focus:ring-brand-blue"
-                                    checked={complaintData.agreed}
-                                    onChange={(e) => setComplaintData({ ...complaintData, agreed: e.target.checked })}
-                                />
-                                <label htmlFor="agreeC" className="text-sm text-gray-600 font-questrial">
-                                    I confirm that the details provided are accurate.
-                                </label>
-                            </div>
-                            <button
-                                type="submit"
-                                disabled={submitLoading || !complaintData.agreed}
-                                className="w-full h-16 rounded-2xl bg-brand-blue text-white font-black uppercase tracking-widest shadow-premium hover:bg-brand-blue-dark transition-all disabled:opacity-50"
-                            >
-                                {submitLoading ? 'Submitting...' : 'Submit Complaint'}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )}
+            {/* Complaint */}
+            {complaintOpen && (
+                <div role="dialog" aria-modal="true" aria-label="File a complaint"
+                    className="fixed inset-0 z-100 flex items-end sm:items-center justify-center sm:p-6">
+                    <div className="absolute inset-0 bg-ground/85 backdrop-blur-sm" onClick={() => setComplaintOpen(false)} />
 
-            {/* Message Notification */}
-            {message && (
-                <div className="fixed bottom-8 right-8 z-[200] animate-slide-in-right">
-                    <div className={`p-6 rounded-3xl shadow-premium border ${message.type === 'success' ? 'bg-white text-green-600 border-green-100' : 'bg-white text-red-600 border-red-100'
-                        } flex items-center gap-4`}>
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${message.type === 'success' ? 'bg-green-50' : 'bg-red-50'
-                            }`}>
-                            {message.type === 'success' ? '✓' : '!'}
+                    <div className="relative card w-full max-w-2xl p-7 sm:p-10 max-h-[92vh] overflow-y-auto anim-rise">
+                        <div className="flex items-start justify-between gap-6 mb-7">
+                            <div>
+                                <p className="kicker mb-3">Service request</p>
+                                <h2 className="display text-[1.5rem] sm:text-[1.875rem]">File a complaint</h2>
+                            </div>
+                            <button onClick={() => setComplaintOpen(false)} aria-label="Close"
+                                className="flex-none w-10 h-10 grid place-items-center rounded-full border border-edge-strong text-ink-dim hover:text-ink transition-colors cursor-pointer">
+                                <CloseIcon />
+                            </button>
                         </div>
-                        <p className="font-bold">{message.text}</p>
-                        <button onClick={() => setMessage(null)} className="text-gray-300 hover:text-gray-500">✕</button>
+
+                        <form onSubmit={submitComplaint} className="flex flex-col gap-5">
+                            <div className="grid sm:grid-cols-2 gap-5">
+                                <div className="flex flex-col gap-2.5">
+                                    <label htmlFor="c-first" className="field-label">First name</label>
+                                    <input id="c-first" readOnly value={complaintData.firstname} className="field" />
+                                </div>
+                                <div className="flex flex-col gap-2.5">
+                                    <label htmlFor="c-last" className="field-label">Last name</label>
+                                    <input id="c-last" readOnly value={complaintData.lastname} className="field" />
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2.5">
+                                <label htmlFor="c-detail" className="field-label">What is happening?</label>
+                                <textarea id="c-detail" required rows={5} className="field resize-y"
+                                    placeholder="Which unit, what it is doing, and when it started."
+                                    value={complaintData.complaint}
+                                    onChange={(e) => setComplaintData({ ...complaintData, complaint: e.target.value })} />
+                            </div>
+
+                            <label htmlFor="agreeC" className="flex items-start gap-3.5 rounded-xl border border-edge bg-ground-alt p-4 cursor-pointer">
+                                <input type="checkbox" id="agreeC" className="mt-0.5 w-4 h-4 accent-[#4E86E8] cursor-pointer"
+                                    checked={complaintData.agreed}
+                                    onChange={(e) => setComplaintData({ ...complaintData, agreed: e.target.checked })} />
+                                <span className="text-[14px] text-ink-soft leading-relaxed">
+                                    I confirm these details are accurate.
+                                </span>
+                            </label>
+
+                            <button type="submit" disabled={submitting || !complaintData.agreed}
+                                className="btn btn-accent w-full py-4"
+                                style={{ ['--accent' as string]: 'var(--color-brand-lift)', ['--on-accent' as string]: '#06101F' }}>
+                                {submitting ? 'Submitting…' : 'Submit complaint'}
+                            </button>
+                        </form>
                     </div>
                 </div>
             )}
 
-        </div>
+            {/* Toast */}
+            {message && (
+                <div role="status"
+                    className="fixed bottom-6 left-6 right-6 sm:left-auto sm:right-6 sm:max-w-md z-200 anim-rise">
+                    <div className={`card p-5 flex items-start gap-4 border-l-2 ${message.type === 'success' ? 'border-l-signal-good' : 'border-l-signal-bad'
+                        }`}>
+                        <p className={`flex-1 text-[15px] leading-relaxed ${message.type === 'success' ? 'text-signal-good' : 'text-signal-bad'
+                            }`}>
+                            {message.text}
+                        </p>
+                        <button onClick={() => setMessage(null)} aria-label="Dismiss"
+                            className="flex-none text-ink-dim hover:text-ink transition-colors cursor-pointer">
+                            <CloseIcon />
+                        </button>
+                    </div>
+                </div>
+            )}
+        </main>
     );
 }
