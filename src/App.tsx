@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route } from "react-router-dom"
 import Home from "./pages/Home"
 import Products from "./pages/Products"
 import Login from "./pages/Login"
@@ -15,7 +15,7 @@ import ProtectedRoute from "./components/ProtectedRoute"
 
 export default function App() {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <AuthProvider>
         <ScrollToHash />
         <Navbar />
@@ -39,6 +39,6 @@ export default function App() {
         <Footer />
         <WhatsAppButton />
       </AuthProvider>
-    </HashRouter>
+    </BrowserRouter>
   )
 }

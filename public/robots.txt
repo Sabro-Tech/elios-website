@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /signup
+Disallow: /reset-password
+Disallow: /support
+Disallow: /admin
+
+Sitemap: https://eliospk.com/sitemap.xml

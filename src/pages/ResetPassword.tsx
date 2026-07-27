@@ -4,6 +4,7 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import navbarLogo from '../assets/elios-navbar.png';
 import { getFriendlyAuthError } from '../utils/authErrors';
+import Seo from '../components/Seo';
 
 export default function ResetPassword() {
     const [email, setEmail] = useState('');
@@ -32,6 +33,7 @@ export default function ResetPassword() {
 
     return (
         <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 relative overflow-hidden bg-[#1E4186]">
+            <Seo title="Reset Password" description="Reset your Elios customer support account password." noindex />
             {/* Animated Background Elements */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/10 blur-[120px] rounded-full animate-float"></div>
             <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-white/10 blur-[150px] rounded-full animate-float [animation-delay:2s]"></div>

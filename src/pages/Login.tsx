@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import navbarLogo from '../assets/elios-navbar.png';
 import { getFriendlyAuthError } from '../utils/authErrors';
+import Seo from '../components/Seo';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -34,6 +35,7 @@ export default function Login() {
 
     return (
         <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 relative overflow-hidden bg-[#1E4186]">
+            <Seo title="Login" description="Log in to your Elios customer support account." noindex />
             {/* Animated Background Elements */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/10 blur-[120px] rounded-full animate-float"></div>
             <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-white/10 blur-[150px] rounded-full animate-float [animation-delay:2s]"></div>
