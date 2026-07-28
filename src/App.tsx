@@ -10,6 +10,7 @@ import Navbar from "./components/Navbar"
 import Footer from "./components/Footer"
 import ScrollToHash from "./components/ScrollToHash"
 import WhatsAppButton from "./components/WhatsAppButton"
+import WebVitalsReporter from "./components/WebVitalsReporter"
 import { AuthProvider } from "./context/AuthContext"
 import ProtectedRoute from "./components/ProtectedRoute"
 
@@ -17,6 +18,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <WebVitalsReporter />
         <ScrollToHash />
         <Navbar />
         <Routes>
