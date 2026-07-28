@@ -21,11 +21,20 @@ function report(metric: Metric) {
   })
   // sendBeacon survives page unload (LCP/CLS often finalize right as the user
   // navigates away) - falls back to fetch with keepalive where unavailable.
+  //
+  // Content-Type is deliberately "text/plain", not "application/json": a JSON
+  // content-type makes this a non-simple cross-origin request, which requires a CORS
+  // preflight. Found 2026-07-28 in a live browser: the preflight succeeds, but the
+  // browser then silently drops the actual POST rather than sending it - sendBeacon()
+  // still returns true, no error anywhere, the event just never arrives. text/plain
+  // is CORS-simple (no preflight), which is what actually gets it delivered. The
+  // body is still JSON - the backend parses it by hand rather than relying on the
+  // Content-Type header (see seo_routes.py::ingest_rum).
   const url = `${ERP_API}/api/seo/rum`
   if (navigator.sendBeacon) {
-    navigator.sendBeacon(url, new Blob([body], { type: "application/json" }))
+    navigator.sendBeacon(url, new Blob([body], { type: "text/plain" }))
   } else {
-    fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {})
+    fetch(url, { method: "POST", headers: { "Content-Type": "text/plain" }, body, keepalive: true }).catch(() => {})
   }
 }
 
