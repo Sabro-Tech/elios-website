@@ -2,12 +2,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import videoBg from '../assets/white waves-background-hero.mp4';
-import geyserImg from '../assets/Geyser-transparent-hero.png';
-import flower1tImg from '../assets/1ton-flower-nobg-hero.png';
-import grey1tImg from '../assets/1ton-grey-nobg-hero.png';
-import black15tImg from '../assets/1_5ton-black-nobg-hero.png';
-import silver15tImg from '../assets/1_5ton-silver-nobg-hero.png';
-import white15tImg from '../assets/1_5ton-white-nobg-hero.png';
+import geyserImg from '../assets/Geyser-transparent-hero.webp';
+import flower1tImg from '../assets/1ton-flower-nobg-hero.webp';
+import grey1tImg from '../assets/1ton-grey-nobg-hero.webp';
+import black15tImg from '../assets/1_5ton-black-nobg-hero.webp';
+import silver15tImg from '../assets/1_5ton-silver-nobg-hero.webp';
+import white15tImg from '../assets/1_5ton-white-nobg-hero.webp';
 
 export default function Hero() {
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -175,6 +175,11 @@ export default function Hero() {
                                         src={slide.image}
                                         alt={slide.alt}
                                         className="relative z-10 max-w-full h-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-float"
+                                        // S5 (LCP): all 6 slides are stacked absolute/opacity (not display:none), so
+                                        // every image loads regardless of which slide is active — only the first
+                                        // (the one visible on initial paint) should compete for bandwidth/priority.
+                                        loading={index === 0 ? 'eager' : 'lazy'}
+                                        fetchPriority={index === 0 ? 'high' : 'auto'}
                                     />
                                 </div>
                             </div>

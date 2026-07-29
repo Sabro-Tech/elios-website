@@ -6,4 +6,22 @@ Disallow: /reset-password
 Disallow: /support
 Disallow: /admin
 
+# S5 — explicit allow rules for known AI/GEO crawlers (already covered by the
+# wildcard Allow above, but explicit directives are current best practice for
+# answer-engine/AI-search visibility, see llms.txt for the curated summary they read).
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
 Sitemap: https://eliospk.com/sitemap.xml

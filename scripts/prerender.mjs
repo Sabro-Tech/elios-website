@@ -5,7 +5,7 @@
 // same file and hydrate over it exactly as before. New route with real content?
 // Add its path to ROUTES below — nothing else changes.
 import { createServer } from 'node:http'
-import { readFile, writeFile, mkdir } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 import puppeteer from 'puppeteer'
@@ -39,6 +39,48 @@ function startServer() {
   return new Promise((resolve) => server.listen(PORT, () => resolve(server)))
 }
 
+// S5 (Visual/Multimodal SEO): image sitemap. Product/hero photos get content-hashed
+// filenames from Vite, so this regenerates sitemap.xml post-build against whatever
+// dist/assets actually contains, rather than hand-maintaining stale hashed URLs.
+const PRODUCT_IMAGE_BASENAMES = [
+  '1ton-flower-nobg-hero', '1ton-grey-nobg-hero', '1_5ton-black-nobg-hero',
+  '1_5ton-silver-nobg-hero', '1_5ton-white-nobg-hero', 'Geyser-transparent-hero',
+]
+
+async function regenerateSitemap() {
+  const assetFiles = await readdir(path.join(DIST, 'assets'))
+  const imageUrls = PRODUCT_IMAGE_BASENAMES
+    .map((base) => assetFiles.find((f) => f.startsWith(base + '-') && f.endsWith('.webp')))
+    .filter(Boolean)
+    .map((f) => 'https://eliospk.com/assets/' + f)
+
+  const imageTags = imageUrls
+    .map((url) => '    <image:image>\n      <image:loc>' + url + '</image:loc>\n    </image:image>')
+    .join('\n')
+
+  const xml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
+    '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">',
+    '  <url>',
+    '    <loc>https://eliospk.com/</loc>',
+    '    <changefreq>weekly</changefreq>',
+    '    <priority>1.0</priority>',
+    '  </url>',
+    '  <url>',
+    '    <loc>https://eliospk.com/products</loc>',
+    '    <changefreq>weekly</changefreq>',
+    '    <priority>0.9</priority>',
+    imageTags,
+    '  </url>',
+    '</urlset>',
+    '',
+  ].join('\n')
+
+  await writeFile(path.join(DIST, 'sitemap.xml'), xml)
+  console.log(`regenerated sitemap.xml with ${imageUrls.length} image entries`)
+}
+
 async function main() {
   const server = await startServer()
   const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] })
@@ -64,6 +106,7 @@ async function main() {
     await browser.close()
     server.close()
   }
+  await regenerateSitemap()
 }
 
 main().catch((err) => {

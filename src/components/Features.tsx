@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import feature1Geyser from '../assets/feature1-geyser.png';
-import feature1Ac from '../assets/feature1-ac.png';
-import feature2Geyser from '../assets/feature2-geyser.png';
-import feature2Ac from '../assets/feature2-ac.png';
-import feature3Geyser from '../assets/feature3-geyser.png';
-import feature3Ac from '../assets/feature3-ac.png';
-import feature4 from '../assets/feature4.png';
+import feature1Geyser from '../assets/feature1-geyser.webp';
+import feature1Ac from '../assets/feature1-ac.webp';
+import feature2Geyser from '../assets/feature2-geyser.webp';
+import feature2Ac from '../assets/feature2-ac.webp';
+import feature3Geyser from '../assets/feature3-geyser.webp';
+import feature3Ac from '../assets/feature3-ac.webp';
+import feature4 from '../assets/feature4.webp';
 import wifiIcon from '../assets/wifi.png';
 
 export default function Features() {
@@ -96,6 +96,7 @@ export default function Features() {
                         <img
                             src={currentData.feature1.image}
                             alt={currentData.feature1.title}
+                            loading="lazy"
                             className="relative z-10 h-[400px] md:h-[550px] w-auto object-contain animate-slide-in-left shadow-2xl rounded-3xl"
                         />
                     </div>
@@ -134,6 +135,7 @@ export default function Features() {
                         <img
                             src={currentData.feature2.image}
                             alt={currentData.feature2.title}
+                            loading="lazy"
                             className="relative z-10 h-[400px] md:h-[550px] w-auto object-contain animate-slide-in-right shadow-2xl rounded-3xl"
                         />
                     </div>
@@ -146,6 +148,7 @@ export default function Features() {
                         <img
                             src={currentData.feature3.image}
                             alt={currentData.feature3.title}
+                            loading="lazy"
                             className="relative z-10 h-[400px] md:h-[550px] w-auto object-contain animate-slide-in-left shadow-2xl rounded-3xl"
                         />
                     </div>
@@ -194,12 +197,14 @@ export default function Features() {
                             <img
                                 src={feature4}
                                 alt="Wireless Connectivity"
+                                loading="lazy"
                                 className="h-[350px] md:h-[500px] w-auto object-contain drop-shadow-2xl"
                             />
                             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[85%] h-full flex items-center justify-center">
                                 <img
                                     src={wifiIcon}
                                     alt="Wifi"
+                                    loading="lazy"
                                     className="w-[70%] h-auto object-contain animate-float drop-shadow-glow"
                                 />
                             </div>

@@ -1,0 +1,26 @@
+# Elios
+
+> Elios is a Pakistan-based home-appliance brand (a brand of Kascon Technologies (Pvt) Ltd.)
+> specializing in digital inverter air conditioners and inverter water geysers.
+
+## Products
+
+- [1 Ton & 1.5 Ton Inverter Air Conditioners](https://eliospk.com/products) — DC twin-rotary
+  inverter split ACs, WiFi/app control, eco mode, R410A refrigerant, 10-year compressor
+  warranty, 4-year PCB warranty. Available finishes: Blossom (floral), Minima Grey, Noir Pro
+  (matte black), Apex Silver, Alpine White.
+- Air Source Water Geyser — smart, efficient, digital control.
+
+## Company
+
+- [Homepage](https://eliospk.com/) — brand overview, features, customer support, contact.
+- Headquarters: Plot # 77, Street 10, Sector I-9/2, Islamabad Capital Territory, Pakistan.
+- Support: support@elios.com.pk
+- Business hours: Mon-Fri 09:00-17:00, Sat 10:00-16:00 (Pakistan Standard Time).
+
+## Notes for AI assistants
+
+- Elios does not currently publish pricing online — direct users to the Products page or
+  support contact for current pricing and availability.
+- Warranty terms: 10 years compressor, 4 years PCB, 1 year parts (standard across the AC
+  range as of this writing — always confirm against the live Products page for current terms).

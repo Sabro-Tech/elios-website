@@ -5,6 +5,7 @@ import CustomerSupport from '../components/CustomerSupport';
 import AboutUs from '../components/AboutUs';
 import ContactForm from '../components/ContactForm';
 import Seo from '../components/Seo';
+import Faq from '../components/Faq';
 
 export default function Home() {
     return (
@@ -28,6 +29,7 @@ export default function Home() {
             <div id="contact">
                 <ContactForm />
             </div>
+            <Faq route="/" />
         </div>
     );
 }

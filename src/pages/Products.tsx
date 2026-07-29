@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import Seo from '../components/Seo';
-import flower1tImg from '../assets/1ton-flower-nobg-hero.png';
-import grey1tImg from '../assets/1ton-grey-nobg-hero.png';
-import black15tImg from '../assets/1_5ton-black-nobg-hero.png';
-import silver15tImg from '../assets/1_5ton-silver-nobg-hero.png';
-import white15tImg from '../assets/1_5ton-white-nobg-hero.png';
+import Faq from '../components/Faq';
+import flower1tImg from '../assets/1ton-flower-nobg-hero.webp';
+import grey1tImg from '../assets/1ton-grey-nobg-hero.webp';
+import black15tImg from '../assets/1_5ton-black-nobg-hero.webp';
+import silver15tImg from '../assets/1_5ton-silver-nobg-hero.webp';
+import white15tImg from '../assets/1_5ton-white-nobg-hero.webp';
 
 interface Dimensions {
     width: string;
@@ -58,6 +59,24 @@ interface Product {
             pcb: string;
             parts: string;
         };
+    };
+}
+
+// S5 (Deep E-E-A-T / GEO): Product JSON-LD generated straight from the same
+// hardcoded product data rendered on the page below -- no AggregateRating/offers,
+// no price data exists and no real review data exists to back a rating claim.
+function buildProductJsonLd(items: Product[]) {
+    return {
+        "@context": "https://schema.org",
+        "@graph": items.map((p) => ({
+            "@type": "Product",
+            name: p.name,
+            image: `https://eliospk.com${p.image}`,
+            description: p.description,
+            sku: p.id,
+            brand: { "@type": "Brand", name: "Elios" },
+            category: p.category === "1" ? "1 Ton Inverter AC" : "1.5 Ton Inverter AC",
+        })),
     };
 }
 
@@ -347,6 +366,7 @@ export default function Products() {
                 description="Browse Elios's full range of 1 Ton and 1.5 Ton inverter split air conditioners — specs, warranty, WiFi/app control and energy efficiency compared."
                 canonicalPath="/products"
             />
+            <script type="application/ld+json">{JSON.stringify(buildProductJsonLd(products))}</script>
             {/* Immersive Hero Header */}
             <section className="relative bg-gradient-to-br from-[#0c1836] via-[#102454] to-[#1E4186] py-32 px-6 overflow-hidden border-b border-[#1E4186]/20">
                 {/* Decorative glowing abstract layout */}
@@ -424,6 +444,7 @@ export default function Products() {
                                     <img
                                         src={product.image}
                                         alt={product.name}
+                                        loading="lazy"
                                         className="h-[82%] max-w-[90%] object-contain relative z-10 transition-transform duration-700 ease-out group-hover:scale-[1.08] group-hover:-rotate-1 drop-shadow-[0_12px_24px_rgba(0,0,0,0.06)]"
                                     />
                                 </div>
@@ -485,6 +506,8 @@ export default function Products() {
                     ))}
                 </div>
             </section>
+
+            <Faq route="/products" />
 
             {/* Spec Details Modal */}
             {selectedProduct && (
