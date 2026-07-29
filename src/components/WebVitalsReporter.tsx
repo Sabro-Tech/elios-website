@@ -1,5 +1,6 @@
 import { useEffect } from "react"
 import { onCLS, onFCP, onINP, onLCP, onTTFB, type Metric } from "web-vitals"
+import { isAutomatedBrowser } from "../utils/isAutomatedBrowser"
 
 // Real-user Core Web Vitals -> ERP SEO module (S2). Mounted once at the app root
 // (not per-page) since these are whole-page-load metrics, not per-route-component
@@ -40,6 +41,7 @@ function report(metric: Metric) {
 
 export default function WebVitalsReporter() {
   useEffect(() => {
+    if (isAutomatedBrowser()) return
     onCLS(report)
     onFCP(report)
     onINP(report)

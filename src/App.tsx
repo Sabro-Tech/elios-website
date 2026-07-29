@@ -11,6 +11,7 @@ import Footer from "./components/Footer"
 import ScrollToHash from "./components/ScrollToHash"
 import WhatsAppButton from "./components/WhatsAppButton"
 import WebVitalsReporter from "./components/WebVitalsReporter"
+import GoogleAnalytics from "./components/GoogleAnalytics"
 import { AuthProvider } from "./context/AuthContext"
 import ProtectedRoute from "./components/ProtectedRoute"
 
@@ -19,6 +20,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <WebVitalsReporter />
+        <GoogleAnalytics />
         <ScrollToHash />
         <Navbar />
         <Routes>

@@ -6,6 +6,16 @@
   <link rel="icon" type="image/png" href="/favicon.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Elios</title>
+  <!-- GA4 — send_page_view:false because this is a client-routed SPA; page_view
+       events are fired manually per route change (src/components/GoogleAnalytics.tsx)
+       so navigating between pages without a full reload still gets tracked. -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-MQSSM1GK3L"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-MQSSM1GK3L', { send_page_view: false });
+  </script>
 </head>
 
 <body>
