@@ -20,6 +20,7 @@ const Signup = lazy(() => import("./pages/Signup"))
 const ResetPassword = lazy(() => import("./pages/ResetPassword"))
 const Support = lazy(() => import("./pages/Support"))
 const Admin = lazy(() => import("./pages/Admin"))
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"))
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/support" element={
               <ProtectedRoute>
                 <Support />

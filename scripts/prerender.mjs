@@ -12,7 +12,7 @@ import puppeteer from 'puppeteer'
 
 const DIST = path.resolve(process.cwd(), 'dist')
 const PORT = 4173
-const ROUTES = ['/', '/products']
+const ROUTES = ['/', '/products', '/privacy-policy']
 
 const MIME = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
@@ -72,6 +72,11 @@ async function regenerateSitemap() {
     '    <changefreq>weekly</changefreq>',
     '    <priority>0.9</priority>',
     imageTags,
+    '  </url>',
+    '  <url>',
+    '    <loc>https://eliospk.com/privacy-policy</loc>',
+    '    <changefreq>yearly</changefreq>',
+    '    <priority>0.3</priority>',
     '  </url>',
     '</urlset>',
     '',
