@@ -98,6 +98,21 @@ export default function PrivacyPolicy() {
                             </ul>
                         </div>
 
+                        <div id="data-deletion">
+                            <h2 className="font-heading font-bold text-2xl text-brand-blue mb-3">Requesting Deletion of Your Data</h2>
+                            <p className="mb-3">
+                                If you'd like us to delete the information we hold about you (contact form submissions, warranty/support
+                                records, or WhatsApp marketing contact details), email{' '}
+                                <a href="mailto:support@elios.com.pk" className="text-brand-blue font-bold">support@elios.com.pk</a> with
+                                the subject line "Data Deletion Request" and the name/phone number/email associated with your record.
+                            </p>
+                            <p>
+                                We'll confirm your identity, process the deletion, and reply once it's done — typically within 30 days.
+                                Some information may be retained where we're required to for warranty, tax, or legal record-keeping
+                                purposes, as noted above; we'll tell you if that applies to your request.
+                            </p>
+                        </div>
+
                         <div>
                             <h2 className="font-heading font-bold text-2xl text-brand-blue mb-3">Contact Us</h2>
                             <p>
