@@ -19,14 +19,14 @@ export default function Footer() {
                     <div className="rounded-2xl overflow-hidden border border-gray-100 h-[140px]">
                         <iframe
                             title="Elios headquarters map"
-                            src="https://maps.google.com/maps?q=Plot%20%23%2077%2C%20Street%2010%2C%20Sector%20I-9%2F2%2C%20Islamabad%2C%20Pakistan&output=embed"
+                            src="https://maps.google.com/maps?q=33.659742,73.046783&output=embed"
                             className="w-full h-full border-0"
                             loading="lazy"
                             referrerPolicy="no-referrer-when-downgrade"
                         />
                     </div>
                     <a
-                        href="https://www.google.com/maps/dir/?api=1&destination=Plot%20%23%2077%2C%20Street%2010%2C%20Sector%20I-9%2F2%2C%20Islamabad%2C%20Pakistan"
+                        href="https://www.google.com/maps/dir/?api=1&destination=33.659742,73.046783"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="font-questrial text-brand-blue font-bold text-sm hover:underline w-fit"
