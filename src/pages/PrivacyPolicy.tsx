@@ -1,4 +1,5 @@
 import Seo from '../components/Seo';
+import Breadcrumbs from '../components/Breadcrumbs';
 
 export default function PrivacyPolicy() {
     return (
@@ -8,6 +9,7 @@ export default function PrivacyPolicy() {
                 description="How Elios (Kascon Technologies) collects, uses, and protects your information across our website, customer support, and WhatsApp communications."
                 canonicalPath="/privacy-policy"
             />
+            <Breadcrumbs items={[{ label: 'Privacy Policy' }]} />
 
             <section className="w-full bg-[#f8fafc] py-24 px-6">
                 <div className="max-w-[900px] mx-auto">

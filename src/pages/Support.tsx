@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import Breadcrumbs from '../components/Breadcrumbs';
 
 interface UserData {
     firstname: string;
@@ -156,6 +157,7 @@ export default function Support() {
 
     return (
         <div className="min-h-screen bg-[#f8fafc]">
+            <Breadcrumbs items={[{ label: 'Support' }]} />
             {/* Hero Section */}
             <section className="bg-brand-blue py-24 px-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-1/2 h-full bg-white/5 skew-x-[-20deg] translate-x-1/2"></div>

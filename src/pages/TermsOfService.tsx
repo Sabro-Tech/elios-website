@@ -1,4 +1,5 @@
 import Seo from '../components/Seo';
+import Breadcrumbs from '../components/Breadcrumbs';
 
 export default function TermsOfService() {
     return (
@@ -8,6 +9,7 @@ export default function TermsOfService() {
                 description="Terms governing use of the Elios (Kascon Technologies) website, warranty registration, customer support portal, and related services."
                 canonicalPath="/terms-of-service"
             />
+            <Breadcrumbs items={[{ label: 'Terms of Service' }]} />
 
             <section className="w-full bg-[#f8fafc] py-24 px-6">
                 <div className="max-w-[900px] mx-auto">

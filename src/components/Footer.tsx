@@ -16,6 +16,23 @@ export default function Footer() {
                             Plot # 77, Street 10, Sector I-9/2,<br />Islamabad Capital Territory, Pakistan.
                         </p>
                     </div>
+                    <div className="rounded-2xl overflow-hidden border border-gray-100 h-[140px]">
+                        <iframe
+                            title="Elios headquarters map"
+                            src="https://maps.google.com/maps?q=Plot%20%23%2077%2C%20Street%2010%2C%20Sector%20I-9%2F2%2C%20Islamabad%2C%20Pakistan&output=embed"
+                            className="w-full h-full border-0"
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                        />
+                    </div>
+                    <a
+                        href="https://www.google.com/maps/dir/?api=1&destination=Plot%20%23%2077%2C%20Street%2010%2C%20Sector%20I-9%2F2%2C%20Islamabad%2C%20Pakistan"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-questrial text-brand-blue font-bold text-sm hover:underline w-fit"
+                    >
+                        Get Directions →
+                    </a>
                 </div>
 
                 {/* Quick Links */}

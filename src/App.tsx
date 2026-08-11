@@ -22,6 +22,7 @@ const Support = lazy(() => import("./pages/Support"))
 const Admin = lazy(() => import("./pages/Admin"))
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"))
 const TermsOfService = lazy(() => import("./pages/TermsOfService"))
+const NotFound = lazy(() => import("./pages/NotFound"))
 
 export default function App() {
   return (
@@ -50,6 +51,7 @@ export default function App() {
                 <Admin />
               </ProtectedRoute>
             } />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
         <Footer />

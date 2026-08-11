@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Seo from '../components/Seo';
 import Faq from '../components/Faq';
+import Breadcrumbs from '../components/Breadcrumbs';
 import flower1tImg from '../assets/1ton-flower-nobg-hero.webp';
 import grey1tImg from '../assets/1ton-grey-nobg-hero.webp';
 import black15tImg from '../assets/1_5ton-black-nobg-hero.webp';
@@ -367,6 +368,7 @@ export default function Products() {
                 canonicalPath="/products"
             />
             <script type="application/ld+json">{JSON.stringify(buildProductJsonLd(products))}</script>
+            <Breadcrumbs items={[{ label: 'Products' }]} />
             {/* Immersive Hero Header */}
             <section className="relative bg-gradient-to-br from-[#0c1836] via-[#102454] to-[#1E4186] py-32 px-6 overflow-hidden border-b border-[#1E4186]/20">
                 {/* Decorative glowing abstract layout */}
